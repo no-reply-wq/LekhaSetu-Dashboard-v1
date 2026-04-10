@@ -1,0 +1,1743 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LekhaSetu — Financial Dashboard</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#f0f2f8;--surface:#fff;--s2:#f7f8fc;--border:#e4e7f0;
+  --t1:#0f1523;--t2:#4a5578;--t3:#8b95b8;
+  --blue:#2563eb;--green:#059669;--amber:#d97706;--red:#dc2626;
+  --purple:#7c3aed;--teal:#0891b2;--orange:#f97316;--pink:#ec4899;
+  --r:12px;--r-sm:8px;
+}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--t1);min-height:100vh;font-size:13px}
+.topbar{background:var(--surface);border-bottom:1px solid var(--border);padding:0 20px;height:52px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:200;box-shadow:0 1px 6px rgba(0,0,0,.05)}
+.brand{display:flex;align-items:center;gap:8px}
+.brand-mark{width:28px;height:28px;background:var(--blue);border-radius:7px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:12px}
+.brand-name{font-size:14px;font-weight:700}
+.topbar-right{display:flex;align-items:center;gap:7px}
+.ctrl{padding:5px 10px;border:1px solid var(--border);border-radius:var(--r-sm);font-family:inherit;font-size:11px;color:var(--t1);background:var(--s2);cursor:pointer;outline:none}
+.pill{display:flex;align-items:center;gap:4px;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:500}
+.pill.live{background:#ecfdf5;color:var(--green)}.pill.off{background:#fef2f2;color:var(--red)}
+.pill-dot{width:6px;height:6px;border-radius:50%;background:currentColor;animation:blink 2s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+.btn{padding:5px 12px;border:none;border-radius:var(--r-sm);font-family:inherit;font-size:11px;font-weight:600;cursor:pointer}
+.btn-primary{background:var(--blue);color:#fff}.btn-primary:hover{background:#1d4ed8}
+.btn-outline{background:var(--bg);color:var(--t2);border:1px solid var(--border)}
+.main-nav{background:var(--surface);border-bottom:1px solid var(--border);padding:0 20px;display:flex;gap:0;position:sticky;top:52px;z-index:100;overflow-x:auto}
+.main-nav.hidden{display:none!important}
+.nav-tab{padding:9px 14px;font-size:11px;font-weight:600;color:var(--t3);cursor:pointer;border:none;background:none;font-family:inherit;border-bottom:2px solid transparent;white-space:nowrap;transition:all .15s;display:flex;align-items:center;gap:4px}
+.nav-tab.active{color:var(--blue);border-bottom-color:var(--blue)}
+.nav-tab:hover:not(.active){color:var(--t2)}
+.nav-tab .badge{padding:1px 5px;border-radius:10px;font-size:9px;background:var(--bg);color:var(--t3)}
+.nav-tab.active .badge{background:#eff6ff;color:var(--blue)}
+.connect-wrap{display:flex;align-items:center;justify-content:center;min-height:calc(100vh - 52px);padding:20px}
+.connect-box{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:32px 36px;max-width:460px;width:100%;text-align:center}
+.connect-box h2{font-size:18px;font-weight:700;margin-bottom:6px}
+.connect-box p{font-size:12px;color:var(--t2);margin-bottom:16px;line-height:1.6}
+.connect-input{width:100%;padding:9px 12px;border:1.5px solid var(--border);border-radius:var(--r-sm);font-family:inherit;font-size:12px;margin-bottom:10px;outline:none}
+.connect-input:focus{border-color:var(--blue)}
+.connect-hint{font-size:11px;color:var(--t3);margin-top:10px;text-align:left;line-height:1.5}
+.loading-wrap{display:flex;align-items:center;justify-content:center;min-height:calc(100vh - 52px);flex-direction:column;gap:10px}
+.spinner{width:32px;height:32px;border:3px solid var(--border);border-top-color:var(--blue);border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.page{padding:14px 20px;max-width:1440px;margin:0 auto}
+.hidden{display:none!important}
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:14px}
+.kpi{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:13px 15px;position:relative;overflow:hidden}
+.kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;border-radius:var(--r) var(--r) 0 0;background:var(--kpi-color,var(--blue))}
+.kpi-icon{position:absolute;top:11px;right:11px;font-size:16px;opacity:.7}
+.kpi-lbl{font-size:10px;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px}
+.kpi-val{font-size:19px;font-weight:700;color:var(--t1);line-height:1;letter-spacing:-.02em}
+.kpi-sub{font-size:10px;color:var(--t3);margin-top:3px}
+.grid-2{display:grid;grid-template-columns:2fr 1fr;gap:12px;margin-bottom:12px}
+.grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:12px}
+.grid-2b{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:15px 17px}
+.card-hd{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:11px}
+.card-title{font-size:12px;font-weight:700;color:var(--t1)}
+.card-sub{font-size:10px;color:var(--t3);margin-top:2px}
+.tbl-scroll{overflow-x:auto;max-height:320px;overflow-y:auto}
+table{width:100%;border-collapse:collapse;font-size:11px}
+th{padding:7px 10px;text-align:left;font-size:10px;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:.03em;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--surface);white-space:nowrap}
+td{padding:7px 10px;border-bottom:1px solid var(--bg);color:var(--t1);white-space:nowrap}
+tr:hover td{background:var(--s2)}
+.amt{text-align:right;font-weight:500}
+.badge{display:inline-flex;font-size:10px;font-weight:600;padding:2px 7px;border-radius:20px}
+.overdue-0{background:#ecfdf5;color:#059669}
+.overdue-30{background:#fffbeb;color:#d97706}
+.overdue-60{background:#fff7ed;color:#f97316}
+.overdue-90{background:#fef2f2;color:#dc2626}
+.overdue-90plus{background:#450a0a;color:#fca5a5;font-weight:700}
+.prog-row{display:flex;align-items:center;gap:7px;margin-bottom:6px}
+.prog-lbl{font-size:11px;color:var(--t2);min-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex-shrink:0}
+.prog-track{flex:1;height:5px;background:var(--border);border-radius:99px;overflow:hidden}
+.prog-fill{height:100%;border-radius:99px;transition:width .5s}
+.prog-val{font-size:10px;font-weight:600;color:var(--t2);min-width:55px;text-align:right}
+.period-bar{display:flex;align-items:center;gap:5px;margin-bottom:14px;flex-wrap:wrap}
+.period-lbl{font-size:10px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.04em}
+.pf{padding:3px 10px;border:1.5px solid var(--border);border-radius:20px;font-size:11px;font-weight:500;cursor:pointer;background:var(--surface);color:var(--t2);transition:all .15s}
+.pf.active{border-color:var(--blue);background:#eff6ff;color:var(--blue);font-weight:600}
+.status-bar{display:flex;align-items:center;gap:12px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:8px 14px;margin-bottom:14px;flex-wrap:wrap}
+.sb-item{font-size:11px;color:var(--t2);display:flex;align-items:center;gap:4px}
+.sb-val{font-weight:600;color:var(--t1)}
+.sb-div{width:1px;height:12px;background:var(--border)}
+.search-input{padding:4px 9px;border:1px solid var(--border);border-radius:var(--r-sm);font-size:11px;outline:none;width:170px}
+.search-input:focus{border-color:var(--blue)}
+.credit-ok{color:var(--green);font-weight:600}
+.credit-warn{color:var(--amber);font-weight:600}
+.credit-over{color:var(--red);font-weight:700}
+/* DOWNLOAD BAR */
+.dl-bar{display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap;align-items:center;padding:10px 14px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r);box-shadow:0 1px 3px rgba(0,0,0,.04)}
+.dl-btn{padding:5px 10px;border:1.5px solid var(--blue);border-radius:6px;font-size:10px;font-weight:600;cursor:pointer;background:#eff6ff;color:var(--blue);display:inline-flex;align-items:center;gap:3px;font-family:inherit;transition:all .15s;white-space:nowrap}
+.dl-btn:hover{background:var(--blue);color:#fff}
+.dl-lbl{font-size:10px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.04em;white-space:nowrap;margin-right:4px}
+/* COLLECTIONS */
+.coll-row{display:flex;align-items:center;padding:16px 20px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .12s;gap:12px}
+.coll-row:hover{background:var(--s2)}
+@media(max-width:900px){.grid-2,.grid-3,.grid-2b{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="brand">
+    <div class="brand-mark">LS</div>
+    <span class="brand-name">LekhaSetu Dashboard</span>
+  </div>
+  <div class="topbar-right">
+    <select class="ctrl" id="companyFilter" onchange="applyFilters()"><option value="">All companies</option></select>
+    <select class="ctrl" id="fyFilter" onchange="applyFilters()"><option value="">All FY</option></select>
+    <div class="pill off" id="connPill"><div class="pill-dot"></div><span id="connTxt">Not connected</span></div>
+    <button class="btn btn-outline" onclick="resetConn()" id="changeBtn" style="display:none;font-size:10px">Change</button>
+    <button class="btn btn-primary" onclick="refreshData()">↺ Refresh</button>
+  </div>
+</div>
+
+<div class="main-nav hidden" id="mainNav">
+  <button class="nav-tab active" onclick="switchTab('overview',this)">📊 Overview</button>
+  <button class="nav-tab" onclick="switchTab('outstanding',this)">💳 Outstanding <span class="badge" id="cnt-os">0</span></button>
+  <button class="nav-tab" onclick="switchTab('company',this)">🏢 Company</button>
+  <button class="nav-tab" onclick="switchTab('sales',this)">🛒 Sales <span class="badge" id="cnt-sales">0</span></button>
+  <button class="nav-tab" onclick="switchTab('purchase',this)">📦 Purchase <span class="badge" id="cnt-purchase">0</span></button>
+  <button class="nav-tab" onclick="switchTab('receipt',this)">💰 Receipt</button>
+  <button class="nav-tab" onclick="switchTab('payment',this)">💸 Payment</button>
+  <button class="nav-tab" onclick="switchTab('rcm',this)">🔄 RCM</button>
+  <button class="nav-tab" onclick="switchTab('journal',this)">📝 Journal</button>
+  <button class="nav-tab" onclick="switchTab('stock',this)">📦 Stock</button>
+  <button class="nav-tab" onclick="switchTab('customer',this)">👥 Customers</button>
+  <button class="nav-tab" onclick="switchTab('partyledger',this)">📒 Party Ledger</button>
+  <button class="nav-tab" onclick="switchTab('collections',this)">🏦 Collections</button>
+  <button class="nav-tab" onclick="switchTab('audit',this)">🔍 Audit Log</button>
+  <button class="nav-tab" onclick="switchTab('gst',this)">🧾 GST</button>
+  <button class="nav-tab" onclick="switchTab('masters',this)">📋 Masters</button>
+</div>
+
+<div id="connectWrap">
+  <div class="connect-wrap">
+    <div class="connect-box">
+      <div style="font-size:32px;margin-bottom:10px">📊</div>
+      <h2>LekhaSetu Dashboard</h2>
+      <p>Paste your <b>/exec URL</b> from Apps Script deployment.</p>
+      <input class="connect-input" id="sheetInput" type="text" placeholder="https://script.google.com/macros/s/.../exec">
+      <button class="btn btn-primary" style="width:100%;padding:10px;font-size:13px" onclick="connectSheet()">Load Dashboard</button>
+      <div class="connect-hint"><b>/exec URL</b> — from Apps Script → Deploy → Web App</div>
+    </div>
+  </div>
+</div>
+
+<div id="loadingWrap" class="hidden">
+  <div class="loading-wrap">
+    <div class="spinner"></div>
+    <div style="font-size:12px;color:var(--t2)" id="loadTxt">Loading...</div>
+  </div>
+</div>
+
+<div id="dashWrap" class="hidden">
+  <div class="page">
+
+    <!-- ✅ FIXED DOWNLOAD BAR -->
+    <div class="dl-bar">
+      <span class="dl-lbl">⬇ Export:</span>
+      <button class="dl-btn" onclick="dlFiltered('current_view')">📊 Current View</button>
+      <button class="dl-btn" onclick="dlAll()">📋 All Vouchers</button>
+      <button class="dl-btn" onclick="dlVchType('Sales')">🛒 Sales</button>
+      <button class="dl-btn" onclick="dlVchType('Purchase')">📦 Purchase</button>
+      <button class="dl-btn" onclick="dlVchType('Receipt')">💰 Receipt</button>
+      <button class="dl-btn" onclick="dlVchType('Payment')">💸 Payment</button>
+      <button class="dl-btn" onclick="dlOutstanding()">💳 Outstanding</button>
+      <button class="dl-btn" onclick="dlSheet('Stock_Summary')">📦 Stock</button>
+      <button class="dl-btn" onclick="dlSheet('Trial_Balance')">⚖️ Trial Balance</button>
+      <button class="dl-btn" onclick="dlSheet('Balance_Sheet')">📑 Balance Sheet</button>
+      <button class="dl-btn" onclick="dlSheet('Profit_Loss')">💰 P&amp;L</button>
+      <button class="dl-btn" onclick="dlSheet('Day_Book')">📅 Day Book</button>
+      <button class="dl-btn" onclick="dlSheet('Item_Allocations')">🔢 Item Alloc</button>
+      <button class="dl-btn" onclick="dlSheet('Full_Audit_Log')">🔍 Audit Log</button>
+    </div>
+
+    <div class="status-bar">
+      <div class="sb-item">Vouchers: <span class="sb-val" id="sbTotal">0</span></div>
+      <div class="sb-div"></div>
+      <div class="sb-item">Companies: <span class="sb-val" id="sbCo">0</span></div>
+      <div class="sb-div"></div>
+      <div class="sb-item">Range: <span class="sb-val" id="sbRange">-</span></div>
+      <div class="sb-div"></div>
+      <div class="sb-item">Updated: <span class="sb-val" id="sbUpdated">-</span></div>
+    </div>
+
+    <div class="period-bar">
+      <span class="period-lbl">Period:</span>
+      <button class="pf" onclick="setPeriod('today',this)">Today</button>
+      <button class="pf" onclick="setPeriod('week',this)">This Week</button>
+      <button class="pf" onclick="setPeriod('month',this)">This Month</button>
+      <button class="pf" onclick="setPeriod('quarter',this)">This Quarter</button>
+      <button class="pf active" onclick="setPeriod('year',this)">This FY</button>
+      <button class="pf" onclick="setPeriod('all',this)">All Time</button>
+    </div>
+
+    <div id="tab-overview"></div>
+    <div id="tab-outstanding" class="hidden"></div>
+    <div id="tab-company" class="hidden"></div>
+    <div id="tab-sales" class="hidden"></div>
+    <div id="tab-purchase" class="hidden"></div>
+    <div id="tab-receipt" class="hidden"></div>
+    <div id="tab-payment" class="hidden"></div>
+    <div id="tab-rcm" class="hidden"></div>
+    <div id="tab-journal" class="hidden"></div>
+    <div id="tab-stock" class="hidden"></div>
+    <div id="tab-customer" class="hidden"></div>
+    <div id="tab-partyledger" class="hidden"></div>
+    <div id="tab-collections" class="hidden"></div>
+    <div id="tab-audit" class="hidden"></div>
+    <div id="tab-gst" class="hidden"></div>
+    <div id="tab-masters" class="hidden"></div>
+  </div>
+</div>
+
+<script>
+let SHEETS={}, rawData=[], filtered=[], sheetUrl='';
+let currentTab='overview', currentPeriod='year';
+let charts={};
+const TC={Sales:'#2563eb',Purchase:'#059669',Payment:'#d97706',Receipt:'#7c3aed',
+          RCM:'#0891b2',Journal:'#f97316',Contra:'#a855f7','Debit Note':'#dc2626','Credit Note':'#16a34a'};
+const MONTHS=['Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec','Jan','Feb','Mar'];
+
+// ===================== CONNECT =====================
+function connectSheet(){
+  const url=document.getElementById('sheetInput').value.trim();
+  if(!url){alert('Please enter URL');return;}
+  sheetUrl=url;localStorage.setItem('ls_url',url);loadData();
+}
+function resetConn(){
+  localStorage.removeItem('ls_url');sheetUrl='';SHEETS={};rawData=[];
+  hide('dashWrap');hide('mainNav');show('connectWrap');
+  document.getElementById('changeBtn').style.display='none';
+  document.getElementById('connPill').className='pill off';
+  document.getElementById('connTxt').textContent='Not connected';
+}
+function refreshData(){if(sheetUrl)loadData();}
+
+// ===================== LOAD =====================
+function loadData(){
+  show('loadingWrap');hide('connectWrap');hide('dashWrap');
+  document.getElementById('mainNav').classList.add('hidden');
+  setLoad('Connecting...');
+  const url=sheetUrl.trim();
+  if(url.includes('script.google.com')&&url.includes('/exec')){
+    loadViaJSONP(url);
+  } else {
+    const m=url.match(/\/d\/([a-zA-Z0-9_-]{20,})/);
+    if(!m){hide('loadingWrap');show('connectWrap');alert('Invalid URL');return;}
+    loadViaCSV(m[1]);
+  }
+}
+
+// ✅ FIXED: Load All_Data first, then load each master sheet separately
+function loadViaJSONP(execUrl){
+  setLoad('Loading voucher data...');
+  window._execUrl = execUrl;
+
+  // Step 1: Load All_Data (vouchers)
+  jsonpCall(execUrl, 'getData', {}, function(json){
+    if(!json||!json.ok){hide('loadingWrap');show('connectWrap');alert('Error: '+(json&&json.error||'Unknown'));return;}
+    // Store All_Data rows
+    const allDataHeaders = json.data && json.data.length > 0 ? Object.keys(json.data[0]) : [];
+    SHEETS['All_Data'] = {
+      headers: allDataHeaders,
+      rows: (json.data||[]).map(r => allDataHeaders.map(h => r[h]||''))
+    };
+    rawData = sheetToRows(SHEETS['All_Data']);
+    if(rawData.length===0){hide('loadingWrap');show('connectWrap');alert('No voucher data yet. Wait for sync.');return;}
+
+    setLoad('Loading master data (Outstanding, Stock, etc.)...');
+
+    // Step 2: Load all master sheets
+    const masterSheets = [
+      'Outstanding','Stock_Summary','Trial_Balance','Balance_Sheet',
+      'Profit_Loss','Day_Book','Item_Allocations','Full_Audit_Log',
+      'Edit_Delete_Log','Ledgers'
+    ];
+    loadSheetsSequentially(execUrl, masterSheets, 0, function(){
+      setLoad('Building dashboard...');
+      setTimeout(initDash, 200);
+    });
+  });
+}
+
+function jsonpCall(execUrl, action, params, callback){
+  const cb = 'lsCb_' + Date.now() + '_' + Math.random().toString(36).slice(2);
+  const s = document.createElement('script');
+  const timer = setTimeout(()=>{
+    cleanup();
+    console.warn('JSONP timeout for action:', action);
+    callback(null);
+  }, 30000);
+  function cleanup(){clearTimeout(timer);delete window[cb];if(s.parentNode)s.parentNode.removeChild(s);}
+  window[cb] = function(json){cleanup();callback(json);};
+  s.onerror = function(){cleanup();callback(null);};
+  let url = execUrl + (execUrl.includes('?')?'&':'?') + 'action=' + action + '&callback=' + cb;
+  if(params && params.sheet) url += '&sheet=' + encodeURIComponent(params.sheet);
+  document.head.appendChild(s);
+  s.src = url;
+}
+
+function loadSheetsSequentially(execUrl, sheetNames, index, done){
+  if(index >= sheetNames.length){ done(); return; }
+  const name = sheetNames[index];
+  setLoad('Loading ' + name + ' (' + (index+1) + '/' + sheetNames.length + ')...');
+  jsonpCall(execUrl, 'getSheet', {sheet: name}, function(json){
+    if(json && json.ok && json.data && json.data.length > 0){
+      const hdrs = Object.keys(json.data[0]);
+      SHEETS[name] = {
+        headers: hdrs,
+        rows: json.data.map(r => hdrs.map(h => r[h]!==undefined?r[h]:''))
+      };
+      console.log('Loaded sheet:', name, json.data.length, 'rows');
+    } else {
+      console.log('Sheet empty or not found:', name, json ? json.message : 'null');
+    }
+    // Load next sheet after short delay
+    setTimeout(()=> loadSheetsSequentially(execUrl, sheetNames, index+1, done), 300);
+  });
+}
+
+function loadViaCSV(sheetId){
+  setLoad('Loading from Google Sheet...');
+  fetch(`https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv&sheet=All_Data`)
+    .then(r=>{if(!r.ok)throw new Error('Sheet returned '+r.status);return r.text();})
+    .then(csv=>{
+      const rows=parseCSV(csv);if(rows.length<2)throw new Error('All_Data tab empty');
+      const hdr=rows[0];
+      SHEETS['All_Data']={headers:hdr,rows:rows.slice(1)};
+      rawData=rows.slice(1).map(r=>{
+        const g=n=>{const i=hdr.findIndex(h=>h.toLowerCase().replace(/[^a-z]/g,'').includes(n.toLowerCase().replace(/[^a-z]/g,'')));return i>=0?String(r[i]||'').trim():'';};
+        return{company:g('company'),dateRaw:g('date'),date:parseDate(g('date')),
+          vchType:normalizeType(g('vchtype')||g('type')),vchNo:g('vchno'),
+          party:g('partyname')||g('party'),amount:parseAmt(g('amount')),
+          gstin:g('gstno')||g('gst'),state:g('state'),narration:g('narration'),
+          createdBy:'',alteredBy:''};
+      }).filter(r=>r.date&&r.vchType);
+      setLoad('Building dashboard...');
+      setTimeout(initDash,200);
+    })
+    .catch(e=>{hide('loadingWrap');show('connectWrap');alert('Error: '+e.message);});
+}
+
+function sheetToRows(sh){
+  if(!sh||!sh.rows||!sh.headers)return[];
+  const hdrs=sh.headers;
+  return sh.rows.map(r=>{
+    const g=n=>{
+      const nl=n.toLowerCase().replace(/[^a-z]/g,'');
+      let i=hdrs.findIndex(h=>h.toLowerCase().replace(/[^a-z]/g,'')===nl);
+      if(i<0)i=hdrs.findIndex(h=>h.toLowerCase().replace(/[^a-z]/g,'').includes(nl));
+      return i>=0?String(r[i]!==null&&r[i]!==undefined?r[i]:'').trim():'';
+    };
+    return{company:g('company'),dateRaw:g('date'),date:parseDate(g('date')),
+      vchType:normalizeType(g('vchtype')||g('type')),
+      vchNo:g('vchno'),party:g('partyname')||g('party'),amount:parseAmt(g('amount')),
+      gstin:g('gstno')||g('gst'),state:g('state'),narration:g('narration'),
+      createdBy:g('createdby')||g('enteredby')||g('createdb'),
+      alteredBy:g('alteredby')||'',machine:g('machine')||g('machinei')||''};
+  }).filter(r=>r.date);
+}
+
+// ===================== DOWNLOAD FEATURE =====================
+function dlCSV(data,fname){
+  if(!data||!data.length){alert('No data to download');return;}
+  let rows=[];
+  if(typeof data[0]==='object'&&!Array.isArray(data[0])){
+    const h=Object.keys(data[0]);rows.push(h);
+    data.forEach(r=>rows.push(h.map(k=>r[k]!==undefined?r[k]:'')));
+  } else rows=data;
+  const csv=rows.map(r=>r.map(c=>{const s=String(c||'').replace(/"/g,'""');return s.includes(',')||s.includes('"')||s.includes('\n')?'"'+s+'"':s;}).join(',')).join('\n');
+  const b=new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8;'});
+  const u=URL.createObjectURL(b);const a=document.createElement('a');
+  a.href=u;a.download=fname+'_'+new Date().toISOString().slice(0,10)+'.csv';a.click();URL.revokeObjectURL(u);
+}
+function dlFiltered(fname){
+  const rows=[['Company','Date','Vch Type','Vch No','Party','Amount','GST No','State','Narration','Created By']];
+  filtered.forEach(r=>rows.push([r.company||'',r.date?r.date.toLocaleDateString('en-IN'):'',r.vchType||'',r.vchNo||'',r.party||'',r.amount||'',r.gstin||'',r.state||'',r.narration||'',r.createdBy||'']));
+  dlCSV(rows,fname||'vouchers');
+}
+function dlAll(){
+  const rows=[['Company','Date','Vch Type','Vch No','Party','Amount','GST No','State','Narration']];
+  rawData.forEach(r=>rows.push([r.company||'',r.date?r.date.toLocaleDateString('en-IN'):'',r.vchType||'',r.vchNo||'',r.party||'',r.amount||'',r.gstin||'',r.state||'',r.narration||'']));
+  dlCSV(rows,'all_vouchers_complete');
+}
+function dlSheet(name){
+  const rows=getSheetRows(name);
+  if(!rows.length){alert(name+' has no data yet. Wait for sync.');return;}
+  dlCSV(rows,name.toLowerCase().replace(/_/g,'-'));
+}
+// ✅ Downloads currently filtered outstanding data WITH summary rows
+function dlOutstanding(){
+  const filtered = window._osCurrentFiltered || window._osAllParsed;
+  if(!filtered||!filtered.length){
+    const rows=getSheetRows('Outstanding');
+    if(!rows.length){alert('No outstanding data yet. Wait for sync.');return;}
+    dlCSV(rows,'outstanding_bills');
+    return;
+  }
+
+  // Get filter descriptions for filename and summary
+  const coFilter = (document.getElementById('os_company_filter')||{}).value||'';
+  const typeFilter = (document.getElementById('os_type_filter')||{}).value||'Receivable';
+  const ageFilter = (document.getElementById('os_age_filter')||{}).value||'';
+  const partyFilter = (document.getElementById('os_party_filter')||{}).value||'';
+
+  // Calculate summary stats
+  const totalOpening = filtered.reduce((s,r)=>s+(r.openingAmt||r.amt),0);
+  const totalPending = filtered.reduce((s,r)=>s+r.amt,0);
+  const overdueRows = filtered.filter(r=>r.overdueDays>0);
+  const overdueAmt = overdueRows.reduce((s,r)=>s+r.amt,0);
+  const criticalRows = filtered.filter(r=>r.overdueDays>90);
+  const criticalAmt = criticalRows.reduce((s,r)=>s+r.amt,0);
+  const parties = [...new Set(filtered.map(r=>r.party))];
+  const companies = [...new Set(filtered.map(r=>r.company))];
+  const now = new Date().toLocaleDateString('en-IN');
+
+  const headers = ['Company','Type','Party','Bill No','Bill Date','Due Date',
+                   'Opening Amount','Pending Amount','Credit Days','Age of Bill (Days)','Overdue Days','Status'];
+
+  const dataRows = filtered.map(r=>[
+    r.company||'',
+    r.type||'',
+    r.party||'',
+    r.billNo||'',
+    r.billDate?fmtDate(r.billDate):'',
+    r.dueDate?fmtDate(r.dueDate):'',
+    Math.round(r.openingAmt||r.amt)||0,
+    Math.round(r.amt)||0,
+    r.creditDays||'',
+    r.ageOfBill||r.overdueDays||0,
+    r.overdueDays||0,
+    r.overdueDays===0?'Current':r.overdueDays<=30?'1-30 Days':r.overdueDays<=60?'31-60 Days':r.overdueDays<=90?'61-90 Days':'Critical >90 Days'
+  ]);
+
+  // ✅ Summary rows at bottom of CSV
+  const summaryRows = [
+    [],
+    ['--- SUMMARY ---','','','','','','','','','','',''],
+    ['Downloaded On','','','','','',now,'','','','',''],
+    ['Filters Applied','','','',
+      'Company: '+(coFilter||'All'),
+      'Type: '+(typeFilter||'Both'),
+      'Age: '+(ageFilter||'All'),
+      'Party: '+(partyFilter||'All'),
+      '','','',''],
+    [],
+    ['TOTAL BILLS','','','','','','','','','','',filtered.length],
+    ['TOTAL PARTIES','','','','','','','','','','',parties.length],
+    ['TOTAL COMPANIES','','','','','','','','','','',companies.length],
+    [],
+    ['TOTAL OPENING AMOUNT','','','','','',Math.round(totalOpening),'','','','',''],
+    ['TOTAL PENDING AMOUNT','','','','','','',Math.round(totalPending),'','','',''],
+    [],
+    ['OVERDUE BILLS','','','','','','','','','','',overdueRows.length],
+    ['OVERDUE AMOUNT','','','','','','',Math.round(overdueAmt),'','','',''],
+    ['CRITICAL >90 DAYS BILLS','','','','','','','','','','',criticalRows.length],
+    ['CRITICAL AMOUNT','','','','','','',Math.round(criticalAmt),'','','',''],
+    [],
+    ['GRAND TOTAL — '+filtered.length+' bills | '+parties.length+' parties | '+companies.length+' companies',
+     '','','','','',Math.round(totalOpening),Math.round(totalPending),'','','',''],
+  ];
+
+  const csvRows = [headers, ...dataRows, ...summaryRows];
+  const filterDesc = [coFilter,typeFilter,partyFilter,ageFilter].filter(Boolean).join('_').replace(/[^a-zA-Z0-9_]/g,'').slice(0,30)||'all';
+  dlCSV(csvRows, 'outstanding_'+filterDesc+'_'+filtered.length+'bills');
+}
+function dlVchType(type){
+  const rows=[['Company','Date','Vch Type','Vch No','Party','Amount','GST No','State','Narration']];
+  filtered.filter(r=>r.vchType===type).forEach(r=>rows.push([r.company||'',r.date?r.date.toLocaleDateString('en-IN'):'',r.vchType||'',r.vchNo||'',r.party||'',r.amount||'',r.gstin||'',r.state||'',r.narration||'']));
+  dlCSV(rows,type.toLowerCase()+'_vouchers');
+}
+
+// ===================== INIT =====================
+function initDash(){
+  const cos=[...new Set(rawData.map(r=>r.company).filter(Boolean))].sort();
+  document.getElementById('companyFilter').innerHTML='<option value="">All companies</option>'+cos.map(c=>`<option>${c}</option>`).join('');
+  const fys=[...new Set(rawData.map(r=>r.date?getFY(r.date):null).filter(Boolean))].sort().reverse();
+  document.getElementById('fyFilter').innerHTML='<option value="">All FY</option>'+fys.map(y=>`<option value="${y}">FY ${y}-${String(y+1).slice(-2)}</option>`).join('');
+  document.getElementById('sbTotal').textContent=rawData.length.toLocaleString('en-IN');
+  document.getElementById('sbCo').textContent=cos.length;
+  document.getElementById('sbUpdated').textContent=new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
+  if(rawData.length){
+    const dates=rawData.map(r=>r.date).filter(Boolean).sort((a,b)=>a-b);
+    document.getElementById('sbRange').textContent=fmtDate(dates[0])+' - '+fmtDate(dates[dates.length-1]);
+  }
+  // ✅ FIXED: read Outstanding count from 'Outstanding' tab
+  const osRows=getSheetRows('Outstanding');
+  document.getElementById('cnt-os').textContent=osRows.length;
+  document.getElementById('cnt-sales').textContent=rawData.filter(r=>r.vchType==='Sales').length.toLocaleString('en-IN');
+  document.getElementById('cnt-purchase').textContent=rawData.filter(r=>r.vchType==='Purchase').length.toLocaleString('en-IN');
+  document.getElementById('connPill').className='pill live';
+  document.getElementById('connTxt').textContent='Connected';
+  document.getElementById('changeBtn').style.display='';
+  hide('loadingWrap');show('dashWrap');
+  document.getElementById('mainNav').classList.remove('hidden');
+  document.getElementById('mainNav').style.display='flex';
+  applyFilters();
+}
+
+function getFY(d){return d.getMonth()>=3?d.getFullYear():d.getFullYear()-1;}
+
+function applyFilters(){
+  const co=document.getElementById('companyFilter').value;
+  const fy=document.getElementById('fyFilter').value;
+  let data=rawData;
+  if(co)data=data.filter(r=>r.company===co);
+  if(fy)data=data.filter(r=>r.date&&getFY(r.date)===parseInt(fy));
+  const now=new Date();
+  if(currentPeriod==='today')data=data.filter(r=>r.date&&r.date.toDateString()===now.toDateString());
+  else if(currentPeriod==='week'){const w=new Date(now);w.setDate(now.getDate()-now.getDay());data=data.filter(r=>r.date&&r.date>=w);}
+  else if(currentPeriod==='month')data=data.filter(r=>r.date&&r.date.getMonth()===now.getMonth()&&r.date.getFullYear()===now.getFullYear());
+  else if(currentPeriod==='quarter'){const q=new Date(now.getFullYear(),Math.floor(now.getMonth()/3)*3,1);data=data.filter(r=>r.date&&r.date>=q);}
+  else if(currentPeriod==='year'){const s=now.getMonth()>=3?new Date(now.getFullYear(),3,1):new Date(now.getFullYear()-1,3,1);data=data.filter(r=>r.date&&r.date>=s);}
+  filtered=data.sort((a,b)=>(b.date||0)-(a.date||0));
+  renderTab(currentTab);
+}
+
+function setPeriod(p,btn){currentPeriod=p;document.querySelectorAll('.pf').forEach(b=>b.classList.remove('active'));btn.classList.add('active');applyFilters();}
+
+function switchTab(tab,btn){
+  currentTab=tab;
+  document.querySelectorAll('.nav-tab').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  document.querySelectorAll('[id^="tab-"]').forEach(el=>el.classList.add('hidden'));
+  document.getElementById('tab-'+tab).classList.remove('hidden');
+  renderTab(tab);
+}
+
+function renderTab(tab){
+  Object.keys(charts).filter(k=>k.startsWith(tab+'_')).forEach(k=>{try{charts[k].destroy();}catch(_){}delete charts[k];});
+  if(tab==='overview')renderOverview();
+  else if(tab==='outstanding')renderOutstanding();
+  else if(tab==='company')renderCompany();
+  else if(tab==='stock')renderStock();
+  else if(tab==='customer')renderCustomer();
+  else if(tab==='partyledger')renderPartyLedger();
+  else if(tab==='collections')renderCollections();
+  else if(tab==='audit')renderAudit();
+  else if(tab==='gst')renderGST();
+  else if(tab==='masters')renderMasters();
+  else renderVoucherTab(tab);
+}
+
+// ===================== OVERVIEW =====================
+function renderOverview(){
+  const el=document.getElementById('tab-overview');
+  const byType={};
+  filtered.forEach(r=>{if(!byType[r.vchType])byType[r.vchType]={amt:0,cnt:0};byType[r.vchType].amt+=Math.abs(r.amount);byType[r.vchType].cnt++;});
+  const types=[['Sales','#2563eb','📈'],['Purchase','#059669','📦'],['Receipt','#7c3aed','💰'],['Payment','#d97706','💸'],['RCM','#0891b2','🔄'],['Journal','#f97316','📝']];
+  el.innerHTML=`
+    <div class="kpi-grid">${types.map(([t,c,i])=>{const d=byType[t]||{amt:0,cnt:0};return`<div class="kpi" style="--kpi-color:${c}"><div class="kpi-icon">${i}</div><div class="kpi-lbl">${t}</div><div class="kpi-val">${fmt(d.amt)}</div><div class="kpi-sub">${d.cnt} vouchers</div></div>`;}).join('')}</div>
+    <div class="grid-2">
+      <div class="card"><div class="card-hd"><div><div class="card-title">Sales vs Purchase — Monthly</div></div></div><div style="height:200px"><canvas id="ov_trend"></canvas></div></div>
+      <div class="card"><div class="card-hd"><div><div class="card-title">Voucher Split</div></div></div><div style="display:flex;gap:8px;align-items:center"><div style="width:130px;height:130px;flex-shrink:0"><canvas id="ov_split"></canvas></div><div id="ov_split_leg" style="flex:1;font-size:10px"></div></div></div>
+    </div>
+    <div class="grid-3">
+      <div class="card"><div class="card-hd"><div><div class="card-title">Cash Flow</div></div></div><div style="height:150px"><canvas id="ov_cash"></canvas></div></div>
+      <div class="card"><div class="card-hd"><div><div class="card-title">Top Parties by Sales</div></div></div><div id="ov_parties"></div></div>
+      <div class="card"><div class="card-hd"><div><div class="card-title">Year over Year Sales</div></div></div><div style="height:150px"><canvas id="ov_yoy"></canvas></div></div>
+    </div>
+    <div class="card"><div class="card-hd"><div><div class="card-title">All Vouchers</div><div class="card-sub" id="ov_sub"></div></div><div style="display:flex;gap:5px"><input type="text" class="search-input" id="ov_search" placeholder="Search..." oninput="renderOvTable()"><select class="ctrl" id="ov_type" onchange="renderOvTable()"><option value="">All types</option>${Object.keys(TC).map(t=>`<option>${t}</option>`).join('')}</select></div></div><div class="tbl-scroll" id="ov_tbl"></div></div>`;
+  buildTrendChart('ov_trend',filtered.filter(r=>['Sales','Purchase'].includes(r.vchType)),[['Sales','#2563eb'],['Purchase','#059669']]);
+  buildDonut('ov_split','ov_split_leg',filtered);
+  buildLineChart('ov_cash',filtered.filter(r=>['Receipt','Payment'].includes(r.vchType)),[['Receipt','#7c3aed'],['Payment','#d97706']]);
+  buildParties('ov_parties',filtered.filter(r=>r.vchType==='Sales'));
+  buildYoY('ov_yoy','Sales');
+  renderOvTable();
+}
+function renderOvTable(){
+  const s=(document.getElementById('ov_search')||{}).value||'';
+  const t=(document.getElementById('ov_type')||{}).value||'';
+  const rows=filtered.filter(r=>{
+    if(t&&r.vchType!==t)return false;
+    if(s&&!r.party?.toLowerCase().includes(s.toLowerCase())&&!r.vchNo?.toLowerCase().includes(s.toLowerCase()))return false;
+    return true;
+  }).slice(0,100);
+  if(document.getElementById('ov_sub'))document.getElementById('ov_sub').textContent=`${rows.length} of ${filtered.length}`;
+  if(document.getElementById('ov_tbl'))document.getElementById('ov_tbl').innerHTML=buildVchTable(rows);
+}
+
+// ===================== OUTSTANDING — TALLY STYLE VIEW =====================
+function renderOutstanding(){
+  const el=document.getElementById('tab-outstanding');
+  const now=new Date();
+  const osAll=getSheetRows('Outstanding');
+
+  if(osAll.length===0){
+    el.innerHTML=`<div style="text-align:center;padding:60px;color:var(--t3)">
+      <div style="font-size:32px;margin-bottom:12px">💳</div>
+      <div style="font-size:16px;font-weight:600;margin-bottom:8px">No Outstanding Data Yet</div>
+      <div style="font-size:13px">Deploy new Code.gs and click Restart in LekhaSetu to trigger master sync.</div>
+    </div>`;
+    return;
+  }
+
+  // ✅ Build Sales invoice lookup by Vch No → get original opening amount
+  const salesLookup = {};
+  rawData.filter(r=>r.vchType==='Sales').forEach(r=>{
+    if(r.vchNo) salesLookup[r.vchNo.trim()] = Math.abs(r.amount);
+  });
+
+  const allParsed = osAll.map(r=>{
+    const party = r.Party||r['Party Name']||r.Ledger||r.Name||'';
+    const company = r.Company||'';
+    const type = r.Type||'Receivable';
+    const billNo = r['Bill No']||r.Ref||'';
+    const billDate = parseDate(r.Date||r['Bill Date']||'');
+    const dueDate = parseDate(r['Due Date']||'');
+    const pendingAmt = parseAmt(r.Amount||r['Pending Amount']||'0');
+    // ✅ Try to get opening amount from Sales voucher by matching Bill No
+    const openingAmt = salesLookup[billNo.trim()] || pendingAmt;
+    // Age of Bill = days since bill date (always positive, like Tally shows)
+    // Overdue = days since due date passed (0 if not yet due)
+    const ageOfBill = billDate ? Math.max(0,Math.floor((now-billDate)/(1000*60*60*24))) :
+                      parseInt(r['Overdue Days']||'0')||0;
+    const overdueDays = dueDate ? Math.max(0,Math.floor((now-dueDate)/(1000*60*60*24))) :
+                        ageOfBill;
+    const creditDays = (billDate&&dueDate) ? Math.floor((dueDate-billDate)/(1000*60*60*24)) : 0;
+    return {party,company,type,billNo,billDate,dueDate,
+            amt:pendingAmt,     // pending amount (from Tally Bills Receivable)
+            openingAmt,         // opening/original amount (from Sales voucher)
+            ageOfBill,          // days since bill date (always shown)
+            overdueDays,        // days since due date passed (0 if not yet due)
+            creditDays};
+  }).filter(r=>r.party&&r.amt>0);
+
+  const recAll = allParsed.filter(r=>r.type==='Receivable');
+  const payAll = allParsed.filter(r=>r.type==='Payable');
+  const companies = [...new Set(allParsed.map(r=>r.company).filter(Boolean))].sort();
+  const totalRec = recAll.reduce((s,r)=>s+r.amt,0);
+  const totalPay = payAll.reduce((s,r)=>s+r.amt,0);
+  const totalOverdue = recAll.filter(r=>r.overdueDays>0).reduce((s,r)=>s+r.amt,0);
+  const totalCritical = recAll.filter(r=>r.overdueDays>90).reduce((s,r)=>s+r.amt,0);
+  const aging={c0:0,d30:0,d60:0,d90:0,d90p:0};
+  recAll.forEach(r=>{
+    if(r.overdueDays===0)aging.c0+=r.amt;
+    else if(r.overdueDays<=30)aging.d30+=r.amt;
+    else if(r.overdueDays<=60)aging.d60+=r.amt;
+    else if(r.overdueDays<=90)aging.d90+=r.amt;
+    else aging.d90p+=r.amt;
+  });
+
+  el.innerHTML=`
+    <div class="kpi-grid" style="margin-bottom:14px">
+      <div class="kpi" style="--kpi-color:#2563eb"><div class="kpi-icon">📥</div><div class="kpi-lbl">Total Receivable</div><div class="kpi-val">${fmt(totalRec)}</div><div class="kpi-sub">${recAll.length} bills</div></div>
+      <div class="kpi" style="--kpi-color:#dc2626"><div class="kpi-icon">⚠️</div><div class="kpi-lbl">Overdue</div><div class="kpi-val" style="color:var(--red)">${fmt(totalOverdue)}</div><div class="kpi-sub">${recAll.filter(r=>r.overdueDays>0).length} bills</div></div>
+      <div class="kpi" style="--kpi-color:#7f1d1d"><div class="kpi-icon">🚨</div><div class="kpi-lbl">Critical >90 days</div><div class="kpi-val" style="color:#b91c1c">${fmt(totalCritical)}</div><div class="kpi-sub">${recAll.filter(r=>r.overdueDays>90).length} bills</div></div>
+      <div class="kpi" style="--kpi-color:#059669"><div class="kpi-icon">📤</div><div class="kpi-lbl">Total Payable</div><div class="kpi-val">${fmt(totalPay)}</div><div class="kpi-sub">${payAll.length} bills</div></div>
+      <div class="kpi" style="--kpi-color:#0891b2"><div class="kpi-icon">⚖️</div><div class="kpi-lbl">Net Position</div><div class="kpi-val" style="color:${totalRec-totalPay>=0?'var(--green)':'var(--red)'}">${fmt(totalRec-totalPay)}</div><div class="kpi-sub">Rec - Pay</div></div>
+    </div>
+
+    <div class="card" style="margin-bottom:12px;padding:12px 17px">
+      <div style="font-size:12px;font-weight:700;margin-bottom:8px">Aging Analysis — Receivables</div>
+      <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px">
+        ${[['Current','#059669',aging.c0,recAll.filter(r=>r.overdueDays===0).length],
+           ['1-30 Days','#d97706',aging.d30,recAll.filter(r=>r.overdueDays>=1&&r.overdueDays<=30).length],
+           ['31-60 Days','#f97316',aging.d60,recAll.filter(r=>r.overdueDays>=31&&r.overdueDays<=60).length],
+           ['61-90 Days','#dc2626',aging.d90,recAll.filter(r=>r.overdueDays>=61&&r.overdueDays<=90).length],
+           ['>90 Days','#7f1d1d',aging.d90p,recAll.filter(r=>r.overdueDays>90).length]
+          ].map(([l,c,v,cnt])=>`
+          <div style="background:${c}15;border:1px solid ${c}40;border-radius:8px;padding:10px;text-align:center">
+            <div style="font-size:9px;font-weight:700;color:${c};text-transform:uppercase">${l}</div>
+            <div style="font-size:14px;font-weight:700;color:${c};margin-top:4px">${fmt(v)}</div>
+            <div style="font-size:9px;color:var(--t3);margin-top:2px">${cnt} bills</div>
+          </div>`).join('')}
+      </div>
+    </div>
+
+    <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center">
+      <select class="ctrl" id="os_company_filter" onchange="renderOsTallyView()" style="font-size:12px;padding:7px 12px;font-weight:600">
+        <option value="">All Companies</option>
+        ${companies.map(c=>`<option value="${c.replace(/"/g,'&quot;')}">${c}</option>`).join('')}
+      </select>
+      <select class="ctrl" id="os_type_filter" onchange="renderOsTallyView()">
+        <option value="Receivable">Receivable</option>
+        <option value="Payable">Payable</option>
+        <option value="">Both</option>
+      </select>
+      <select class="ctrl" id="os_age_filter" onchange="renderOsTallyView()">
+        <option value="">All Ages</option>
+        <option value="current">Current only</option>
+        <option value="overdue">Overdue only</option>
+        <option value="30">1-30 days</option>
+        <option value="60">31-60 days</option>
+        <option value="90">61-90 days</option>
+        <option value="90p">&gt;90 days Critical</option>
+      </select>
+      <div style="position:relative">
+        <input type="text" id="os_party_filter" placeholder="🔍 Search party..." 
+          oninput="filterOsPartyDropdown()" onfocus="filterOsPartyDropdown()"
+          autocomplete="off"
+          style="width:220px;padding:6px 10px;border:1px solid var(--border);border-radius:var(--r-sm);font-size:11px;outline:none">
+        <div id="os_party_dd" style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--surface);border:1px solid var(--border);border-radius:0 0 8px 8px;max-height:220px;overflow-y:auto;z-index:999;box-shadow:0 4px 12px rgba(0,0,0,.1)"></div>
+      </div>
+      <select class="ctrl" id="os_group_by" onchange="renderOsTallyView()">
+        <option value="company">Group by Company</option>
+        <option value="party">Group by Party</option>
+        <option value="none">Flat list</option>
+      </select>
+      <button class="dl-btn" onclick="dlOutstanding()">⬇ Download CSV</button>
+    </div>
+
+    <div id="os_tally_view"></div>
+  `;
+
+  window._osAllParsed = allParsed;
+  renderOsTallyView();
+}
+
+function filterOsPartyDropdown(){
+  const val = (document.getElementById('os_party_filter')||{}).value?.toLowerCase()||'';
+  const dd = document.getElementById('os_party_dd');
+  if(!dd) return;
+  // Get all unique parties from current data (filtered by company/type)
+  const co = (document.getElementById('os_company_filter')||{}).value||'';
+  const type = (document.getElementById('os_type_filter')||{}).value||'Receivable';
+  const allParties = [...new Set((window._osAllParsed||[])
+    .filter(r=>(!co||r.company===co)&&(!type||r.type===type))
+    .map(r=>r.party).filter(Boolean))].sort();
+  const matches = val ? allParties.filter(p=>p.toLowerCase().includes(val)) : allParties;
+  if(!matches.length){dd.style.display='none';return;}
+  dd.innerHTML = [
+    `<div onclick="selectOsParty('')" style="padding:8px 12px;cursor:pointer;font-size:11px;color:var(--t3);border-bottom:1px solid var(--bg);font-style:italic"
+      onmouseover="this.style.background='var(--s2)'" onmouseout="this.style.background=''">All Parties</div>`,
+    ...matches.slice(0,50).map(p=>`
+      <div onclick="selectOsParty('${p.replace(/'/g,"\'")}')" 
+        style="padding:8px 12px;cursor:pointer;font-size:11px;border-bottom:1px solid var(--bg)"
+        onmouseover="this.style.background='var(--s2)'" onmouseout="this.style.background=''">
+        ${p}
+      </div>`)
+  ].join('');
+  dd.style.display = 'block';
+}
+function selectOsParty(name){
+  const inp = document.getElementById('os_party_filter');
+  const dd = document.getElementById('os_party_dd');
+  if(inp) inp.value = name;
+  if(dd) dd.style.display = 'none';
+  renderOsTallyView();
+}
+// Close dropdown when clicking outside
+document.addEventListener('click', function(e){
+  if(!e.target.closest('#os_party_dd')&&e.target.id!=='os_party_filter'){
+    const dd=document.getElementById('os_party_dd');
+    if(dd)dd.style.display='none';
+  }
+});
+
+function renderOsTallyView(){
+  const co = (document.getElementById('os_company_filter')||{}).value||'';
+  const type = (document.getElementById('os_type_filter')||{}).value||'Receivable';
+  const age = (document.getElementById('os_age_filter')||{}).value||'';
+  const search = ((document.getElementById('os_party_filter')||{}).value||'').toLowerCase();
+  const groupBy = (document.getElementById('os_group_by')||{}).value||'company';
+  const now = new Date();
+
+  let rows = (window._osAllParsed||[]).filter(r=>{
+    if(co && r.company !== co) return false;
+    if(type && r.type !== type) return false;
+    if(search && !r.party.toLowerCase().includes(search) && !(r.billNo||'').toLowerCase().includes(search)) return false;
+    if(age==='current' && r.overdueDays!==0) return false;
+    if(age==='overdue' && r.overdueDays===0) return false;
+    if(age==='30' && (r.overdueDays<1||r.overdueDays>30)) return false;
+    if(age==='60' && (r.overdueDays<31||r.overdueDays>60)) return false;
+    if(age==='90' && (r.overdueDays<61||r.overdueDays>90)) return false;
+    if(age==='90p' && r.overdueDays<=90) return false;
+    return true;
+  }).sort((a,b)=>a.company.localeCompare(b.company)||a.party.localeCompare(b.party)||((a.billDate||0)-(b.billDate||0)));
+
+  // ✅ Store for download — always reflects current filter
+  window._osCurrentFiltered = rows;
+
+  const el = document.getElementById('os_tally_view');
+  if(!el) return;
+  if(!rows.length){el.innerHTML='<div style="text-align:center;padding:40px;color:var(--t3)">No bills found</div>';return;}
+
+  const grandTotal = rows.reduce((s,r)=>s+r.amt,0);
+  const thS = `padding:8px 12px;text-align:left;font-size:10px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.04em;border-bottom:2px solid var(--border);white-space:nowrap;background:#f8fafc`;
+
+  function billTable(billRows, showCo){
+    const sub = billRows.reduce((s,r)=>s+r.amt,0);
+    return `<div style="overflow-x:auto;max-height:480px;overflow-y:auto">
+      <table style="width:100%;border-collapse:collapse;font-size:12px">
+        <thead><tr>
+          ${showCo?`<th style="${thS}">Company</th>`:''}
+          <th style="${thS}">Date</th>
+          <th style="${thS}">Ref No</th>
+          <th style="${thS}">Party</th>
+          <th style="${thS};text-align:right">Opening Amt</th>
+          <th style="${thS};text-align:right">Pending Amt</th>
+          <th style="${thS}">Due On</th>
+          <th style="${thS};text-align:center">Credit Days</th>
+          <th style="${thS};text-align:center">Age of Bill</th>
+        </tr></thead>
+        <tbody>
+          ${billRows.map(r=>`<tr style="${r.overdueDays>90?'background:#fff5f5':r.overdueDays>60?'background:#fff8f5':r.overdueDays>30?'background:#fffdf5':r.overdueDays>0?'background:#fffef0':''}">
+            ${showCo?`<td style="padding:7px 12px;border-bottom:1px solid var(--bg);font-size:10px;color:var(--t2);white-space:nowrap">${r.company}</td>`:''}
+            <td style="padding:7px 12px;border-bottom:1px solid var(--bg);color:var(--t2);white-space:nowrap">${r.billDate?fmtDate(r.billDate):'--'}</td>
+            <td style="padding:7px 12px;border-bottom:1px solid var(--bg)"><span style="font-family:monospace;font-size:11px;background:var(--s2);border:1px solid var(--border);padding:1px 7px;border-radius:4px;font-weight:600">${r.billNo||'--'}</span></td>
+            <td style="padding:7px 12px;border-bottom:1px solid var(--bg);font-weight:600;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.party}</td>
+            <td style="padding:7px 12px;border-bottom:1px solid var(--bg);text-align:right;color:var(--t2)">₹${Math.round(r.openingAmt).toLocaleString('en-IN')}</td>
+            <td style="padding:7px 12px;border-bottom:1px solid var(--bg);text-align:right;font-weight:700;color:${r.overdueDays>90?'#dc2626':r.overdueDays>0?'#d97706':'var(--t1)'}">₹${Math.round(r.amt).toLocaleString('en-IN')}</td>
+            <td style="padding:7px 12px;border-bottom:1px solid var(--bg);white-space:nowrap;color:var(--t2)">${r.dueDate?fmtDate(r.dueDate):'--'}</td>
+            <td style="padding:7px 12px;border-bottom:1px solid var(--bg);text-align:center;color:var(--t3)">${r.creditDays||'--'}</td>
+            <td style="padding:7px 12px;border-bottom:1px solid var(--bg);text-align:center;font-weight:700;color:${r.overdueDays>90?'#dc2626':r.overdueDays>60?'#f97316':r.overdueDays>30?'#d97706':r.overdueDays>0?'#d97706':'#059669'}">
+              <div style="font-weight:700">${r.ageOfBill||r.overdueDays} days</div>
+              ${r.overdueDays===0&&r.ageOfBill>0?'<div style="font-size:9px;color:#059669">Not Due</div>':r.overdueDays>0?'<div style="font-size:9px;color:var(--red)">Overdue '+r.overdueDays+'d</div>':''}
+            </td>
+          </tr>`).join('')}
+        </tbody>
+        <tfoot><tr style="background:var(--s2);font-weight:700;border-top:2px solid var(--border)">
+          ${showCo?'<td style="padding:9px 12px"></td>':''}
+          <td colspan="3" style="padding:9px 12px;font-size:11px">SUBTOTAL — ${billRows.length} bills</td>
+          <td style="padding:9px 12px;text-align:right">₹${Math.round(billRows.reduce((s,r)=>s+r.openingAmt,0)).toLocaleString('en-IN')}</td>
+          <td style="padding:9px 12px;text-align:right;color:var(--blue);font-size:13px">₹${Math.round(sub).toLocaleString('en-IN')}</td>
+          <td colspan="3"></td>
+        </tr></tfoot>
+      </table></div>`;
+  }
+
+  let html = '';
+
+  if(groupBy==='company'){
+    const byCompany = {};
+    rows.forEach(r=>{if(!byCompany[r.company])byCompany[r.company]=[];byCompany[r.company].push(r);});
+    Object.keys(byCompany).sort().forEach(coName=>{
+      const coRows = byCompany[coName];
+      const coTotal = coRows.reduce((s,r)=>s+r.amt,0);
+      const overdueAmt = coRows.filter(r=>r.overdueDays>0).reduce((s,r)=>s+r.amt,0);
+      const criticalAmt = coRows.filter(r=>r.overdueDays>90).reduce((s,r)=>s+r.amt,0);
+      const parties = [...new Set(coRows.map(r=>r.party))].length;
+      html += `<div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;margin-bottom:16px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.06)">
+        <div style="background:linear-gradient(135deg,#1e3a5f 0%,#2563eb 100%);padding:16px 20px;display:flex;align-items:center;justify-content:space-between">
+          <div>
+            <div style="color:#fff;font-size:15px;font-weight:700">🏢 ${coName}</div>
+            <div style="color:#bfdbfe;font-size:11px;margin-top:4px">${coRows.length} bills | ${parties} parties${overdueAmt>0?' | <span style="color:#fca5a5;font-weight:700">⚠ Overdue: ₹'+Math.round(overdueAmt).toLocaleString('en-IN')+'</span>':' | <span style="color:#86efac">All Current ✓</span>'}</div>
+          </div>
+          <div style="text-align:right">
+            <div style="color:#fff;font-size:20px;font-weight:700">₹${Math.round(coTotal).toLocaleString('en-IN')}</div>
+            ${criticalAmt>0?`<div style="color:#fca5a5;font-size:11px">🚨 Critical: ₹${Math.round(criticalAmt).toLocaleString('en-IN')}</div>`:''}
+          </div>
+        </div>
+        ${billTable(coRows, false)}
+      </div>`;
+    });
+
+  } else if(groupBy==='party'){
+    const byParty = {};
+    rows.forEach(r=>{
+      const k = r.party+'||'+r.company;
+      if(!byParty[k]) byParty[k]={party:r.party,company:r.company,bills:[]};
+      byParty[k].bills.push(r);
+    });
+    Object.values(byParty).sort((a,b)=>b.bills.reduce((s,r)=>s+r.amt,0)-a.bills.reduce((s,r)=>s+r.amt,0)).forEach(pg=>{
+      const pgTotal = pg.bills.reduce((s,r)=>s+r.amt,0);
+      const maxOD = pg.bills.reduce((m,r)=>Math.max(m,r.overdueDays),0);
+      html += `<div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;margin-bottom:12px;overflow:hidden">
+        <div style="background:var(--s2);padding:12px 18px;display:flex;align-items:center;justify-content:space-between;border-bottom:2px solid var(--border)">
+          <div>
+            <div style="font-size:13px;font-weight:700">${pg.party}</div>
+            <div style="font-size:10px;color:var(--t3)">${pg.company} | ${pg.bills.length} bills</div>
+          </div>
+          <div style="text-align:right">
+            <div style="font-size:15px;font-weight:700;color:${maxOD>90?'var(--red)':maxOD>0?'var(--amber)':'var(--t1)'}">₹${Math.round(pgTotal).toLocaleString('en-IN')}</div>
+            <div style="font-size:10px;color:${maxOD>0?'var(--red)':'var(--green)'}">${maxOD>0?'Max overdue: '+maxOD+' days':'All current ✓'}</div>
+          </div>
+        </div>
+        ${billTable(pg.bills, false)}
+      </div>`;
+    });
+
+  } else {
+    html = `<div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden">${billTable(rows, true)}</div>`;
+  }
+
+  html += `<div style="background:#1e3a5f;color:#fff;border-radius:8px;padding:14px 20px;display:flex;justify-content:space-between;align-items:center;margin-top:8px">
+    <span style="font-size:12px;font-weight:600">GRAND TOTAL — ${rows.length} bills | ${[...new Set(rows.map(r=>r.party))].length} parties | ${[...new Set(rows.map(r=>r.company))].length} companies</span>
+    <span style="font-size:20px;font-weight:700">₹${Math.round(grandTotal).toLocaleString('en-IN')}</span>
+  </div>`;
+
+  el.innerHTML = html;
+}
+
+
+// ===================== COMPANY PERFORMANCE =====================
+function renderCompany(){
+  const el=document.getElementById('tab-company');
+  const companies=[...new Set(filtered.map(r=>r.company).filter(Boolean))];
+  const osAll=getSheetRows('Outstanding');
+
+  const compStats=companies.map(co=>{
+    const rows=filtered.filter(r=>r.company===co);
+    const sales=rows.filter(r=>r.vchType==='Sales').reduce((s,r)=>s+Math.abs(r.amount),0);
+    const purchase=rows.filter(r=>r.vchType==='Purchase').reduce((s,r)=>s+Math.abs(r.amount),0);
+    const receipt=rows.filter(r=>r.vchType==='Receipt').reduce((s,r)=>s+Math.abs(r.amount),0);
+    const payment=rows.filter(r=>r.vchType==='Payment').reduce((s,r)=>s+Math.abs(r.amount),0);
+    // ✅ Get outstanding for this specific company
+    const coOs=osAll.filter(r=>(r.Company||'')===(co)&&(r.Type||'Receivable')==='Receivable');
+    const totalOs=coOs.reduce((s,r)=>s+parseAmt(r.Amount||r['Pending Amount']||'0'),0);
+    const now=new Date();
+    const overdueOs=coOs.filter(r=>{
+      const od=parseInt(r['Overdue Days']||'0')||0;
+      if(od>0)return true;
+      const due=parseDate(r['Due Date']||'');
+      return due&&due<now;
+    }).reduce((s,r)=>s+parseAmt(r.Amount||r['Pending Amount']||'0'),0);
+    return{name:co,sales,purchase,receipt,payment,outstanding:totalOs,overdue:overdueOs,profit:sales-purchase,txns:rows.length};
+  }).sort((a,b)=>b.sales-a.sales);
+
+  el.innerHTML=`
+    <div class="kpi-grid">${compStats.slice(0,6).map(c=>`
+      <div class="kpi" style="--kpi-color:#2563eb">
+        <div class="kpi-lbl" style="font-size:9px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${c.name}</div>
+        <div class="kpi-val">${fmt(c.sales)}</div>
+        <div class="kpi-sub">Sales | ${c.txns} txns</div>
+      </div>`).join('')}</div>
+    <div class="grid-2b">
+      <div class="card"><div class="card-hd"><div><div class="card-title">Company-wise Sales vs Purchase</div></div></div><div style="height:200px"><canvas id="co_sales_chart"></canvas></div></div>
+      <div class="card"><div class="card-hd"><div><div class="card-title">Company-wise Gross Profit</div></div></div><div style="height:200px"><canvas id="co_pl_chart"></canvas></div></div>
+    </div>
+    <div class="card" style="margin-bottom:12px">
+      <div class="card-hd"><div><div class="card-title">Company Performance Summary</div></div></div>
+      <div class="tbl-scroll">
+        <table><thead><tr>
+          <th>Company</th><th style="text-align:right">Sales</th><th style="text-align:right">Purchase</th>
+          <th style="text-align:right">Receipt</th><th style="text-align:right">Payment</th>
+          <th style="text-align:right">Gross Profit</th><th style="text-align:right">Outstanding</th>
+          <th style="text-align:right">Overdue</th><th>Txns</th>
+        </tr></thead><tbody>
+        ${compStats.map(c=>`<tr>
+          <td style="font-weight:600">${c.name}</td>
+          <td class="amt" style="color:var(--blue)">${fmt(c.sales)}</td>
+          <td class="amt" style="color:var(--green)">${fmt(c.purchase)}</td>
+          <td class="amt" style="color:var(--purple)">${fmt(c.receipt)}</td>
+          <td class="amt" style="color:var(--amber)">${fmt(c.payment)}</td>
+          <td class="amt" style="color:${c.profit>=0?'var(--green)':'var(--red)'}">${fmt(c.profit)}</td>
+          <td class="amt">${fmt(c.outstanding)}</td>
+          <td class="amt" style="color:${c.overdue>0?'var(--red)':'var(--green)'}">${fmt(c.overdue)}</td>
+          <td>${c.txns}</td>
+        </tr>`).join('')}
+        </tbody></table>
+      </div>
+    </div>
+    <div class="card"><div class="card-hd"><div><div class="card-title">Company Monthly Sales Trend</div></div></div><div style="height:220px"><canvas id="co_monthly_chart"></canvas></div></div>`;
+
+  charts['company_sales']=new Chart(document.getElementById('co_sales_chart'),{type:'bar',
+    data:{labels:compStats.map(c=>c.name.slice(0,15)),datasets:[
+      {label:'Sales',data:compStats.map(c=>c.sales),backgroundColor:'rgba(37,99,235,.8)',borderRadius:3},
+      {label:'Purchase',data:compStats.map(c=>c.purchase),backgroundColor:'rgba(5,150,105,.75)',borderRadius:3}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'top',labels:{font:{size:10},boxWidth:8}}},
+      scales:{y:{ticks:{callback:v=>'Rs.'+fmtK(v),font:{size:9}},grid:{color:'rgba(0,0,0,.03)'}},x:{ticks:{font:{size:9},maxRotation:45},grid:{display:false}}}}});
+  charts['company_pl']=new Chart(document.getElementById('co_pl_chart'),{type:'bar',
+    data:{labels:compStats.map(c=>c.name.slice(0,15)),datasets:[{label:'Gross Profit',data:compStats.map(c=>c.profit),backgroundColor:compStats.map(c=>c.profit>=0?'rgba(5,150,105,.8)':'rgba(220,38,38,.8)'),borderRadius:3}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
+      scales:{y:{ticks:{callback:v=>'Rs.'+fmtK(v),font:{size:9}},grid:{color:'rgba(0,0,0,.03)'}},x:{ticks:{font:{size:9},maxRotation:45},grid:{display:false}}}}});
+  const g=groupMonthly(filtered.filter(r=>r.vchType==='Sales'));
+  const labs=Object.keys(g).sort();
+  const colors=['#2563eb','#059669','#d97706','#dc2626','#7c3aed','#0891b2'];
+  charts['company_monthly']=new Chart(document.getElementById('co_monthly_chart'),{type:'line',
+    data:{labels:labs,datasets:companies.slice(0,6).map((co,i)=>({
+      label:co.slice(0,15),data:labs.map(l=>(g[l]||[]).filter(r=>r.company===co).reduce((s,r)=>s+Math.abs(r.amount),0)),
+      borderColor:colors[i%colors.length],tension:.4,pointRadius:2,borderWidth:2,fill:false}))},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'top',labels:{font:{size:10},boxWidth:8,padding:8}}},
+      scales:{y:{ticks:{callback:v=>'Rs.'+fmtK(v),font:{size:9}},grid:{color:'rgba(0,0,0,.03)'}},x:{ticks:{font:{size:9},maxRotation:45},grid:{display:false}}}}});
+}
+
+// ===================== VOUCHER TABS =====================
+function renderVoucherTab(tab){
+  const typeMap={sales:'Sales',purchase:'Purchase',receipt:'Receipt',payment:'Payment',rcm:'RCM',journal:'Journal'};
+  const type=typeMap[tab];if(!type)return;
+  const el=document.getElementById('tab-'+tab);
+  const rows=filtered.filter(r=>r.vchType===type);
+  const total=rows.reduce((s,r)=>s+Math.abs(r.amount),0);
+  const color=TC[type]||'#2563eb';
+  const now=new Date();
+  const thisMo=rows.filter(r=>r.date&&r.date.getMonth()===now.getMonth()&&r.date.getFullYear()===now.getFullYear()).reduce((s,r)=>s+Math.abs(r.amount),0);
+  const byParty={};rows.forEach(r=>{const p=r.party||'Unknown';if(!byParty[p])byParty[p]={amt:0,cnt:0};byParty[p].amt+=Math.abs(r.amount);byParty[p].cnt++;});
+  const topP=Object.entries(byParty).sort((a,b)=>b[1].amt-a[1].amt).slice(0,7);
+  const maxP=topP[0]?topP[0][1].amt:1;
+  const g=groupMonthly(rows);const labs=Object.keys(g).sort();
+  el.innerHTML=`
+    <div class="kpi-grid">
+      <div class="kpi" style="--kpi-color:${color}"><div class="kpi-lbl">Total ${type}</div><div class="kpi-val">${fmt(total)}</div><div class="kpi-sub">${rows.length} vouchers</div></div>
+      <div class="kpi" style="--kpi-color:${color}"><div class="kpi-lbl">This Month</div><div class="kpi-val">${fmt(thisMo)}</div></div>
+      <div class="kpi" style="--kpi-color:${color}"><div class="kpi-lbl">Average</div><div class="kpi-val">${fmt(rows.length?total/rows.length:0)}</div></div>
+      <div class="kpi" style="--kpi-color:${color}"><div class="kpi-lbl">Unique Parties</div><div class="kpi-val">${Object.keys(byParty).length}</div></div>
+    </div>
+    <div class="grid-2">
+      <div class="card"><div class="card-hd"><div><div class="card-title">${type} Monthly Trend</div></div></div><div style="height:190px"><canvas id="${tab}_trend"></canvas></div></div>
+      <div class="card"><div class="card-hd"><div><div class="card-title">Top Parties</div></div></div><div id="${tab}_parties"></div></div>
+    </div>
+    <div class="grid-2b">
+      <div class="card"><div class="card-hd"><div><div class="card-title">Year over Year</div></div></div><div style="height:160px"><canvas id="${tab}_yoy"></canvas></div></div>
+      <div class="card"><div class="card-hd"><div><div class="card-title">Cumulative FY</div></div></div><div style="height:160px"><canvas id="${tab}_cumul"></canvas></div></div>
+    </div>
+    <div class="card"><div class="card-hd"><div><div class="card-title">${type} Vouchers</div><div class="card-sub" id="${tab}_sub"></div></div>
+      <div style="display:flex;gap:5px">
+        <input type="text" class="search-input" id="${tab}_search" placeholder="Search..." oninput="filterVchTab('${tab}','${type}')">
+        <button class="dl-btn" onclick="dlVchType('${type}')">⬇ Download</button>
+      </div>
+    </div><div class="tbl-scroll" id="${tab}_tbl"></div></div>`;
+  charts[tab+'_trend']=new Chart(document.getElementById(tab+'_trend'),{type:'bar',
+    data:{labels:labs,datasets:[
+      {label:'Amount',data:labs.map(l=>(g[l]||[]).reduce((s,r)=>s+Math.abs(r.amount),0)),backgroundColor:color+'bb',borderRadius:3,borderSkipped:false,yAxisID:'y'},
+      {type:'line',label:'Count',data:labs.map(l=>(g[l]||[]).length),borderColor:'#f97316',borderWidth:2,pointRadius:2,tension:.4,fill:false,yAxisID:'y2'}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'top',labels:{font:{size:10},boxWidth:8}}},
+      scales:{y:{ticks:{callback:v=>'Rs.'+fmtK(v),font:{size:9}},grid:{color:'rgba(0,0,0,.03)'},position:'left'},y2:{ticks:{font:{size:9}},grid:{display:false},position:'right'},x:{ticks:{font:{size:9},maxRotation:45},grid:{display:false}}}}});
+  document.getElementById(tab+'_parties').innerHTML=topP.map(([p,d])=>`<div class="prog-row"><div class="prog-lbl" title="${p}">${p}</div><div class="prog-track"><div class="prog-fill" style="width:${Math.round(d.amt/maxP*100)}%;background:${color}"></div></div><div class="prog-val">${fmt(d.amt)}</div></div>`).join('');
+  buildYoY(tab+'_yoy',type);
+  const fyStart=now.getMonth()>=3?new Date(now.getFullYear(),3,1):new Date(now.getFullYear()-1,3,1);
+  const fyRows=rows.filter(r=>r.date&&r.date>=fyStart).sort((a,b)=>a.date-b.date);
+  let cumul=0;const cpts=fyRows.map(r=>{cumul+=Math.abs(r.amount);return{x:fmtDate(r.date),y:cumul};});
+  const sampled=cpts.length>100?cpts.filter((_,i)=>i%Math.ceil(cpts.length/100)===0||i===cpts.length-1):cpts;
+  charts[tab+'_cumul']=new Chart(document.getElementById(tab+'_cumul'),{type:'line',
+    data:{labels:sampled.map(d=>d.x),datasets:[{label:'Cumulative',data:sampled.map(d=>d.y),borderColor:color,backgroundColor:color+'15',fill:true,tension:.3,pointRadius:0,borderWidth:2}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{ticks:{callback:v=>'Rs.'+fmtK(v),font:{size:9}},grid:{color:'rgba(0,0,0,.03)'}},x:{ticks:{font:{size:8},maxTicksLimit:10,maxRotation:45},grid:{display:false}}}}});
+  filterVchTab(tab,type);
+}
+function filterVchTab(tab,type){
+  const s=(document.getElementById(tab+'_search')||{}).value?.toLowerCase()||'';
+  const rows=filtered.filter(r=>r.vchType===type&&(!s||r.party?.toLowerCase().includes(s)||r.vchNo?.toLowerCase().includes(s))).slice(0,200);
+  const sub=document.getElementById(tab+'_sub');if(sub)sub.textContent=rows.length+' records';
+  const tbl=document.getElementById(tab+'_tbl');if(tbl)tbl.innerHTML=buildVchTable(rows);
+}
+
+// ===================== STOCK =====================
+function renderStock(){
+  const el=document.getElementById('tab-stock');
+  const stockRows=getSheetRows('Stock_Summary');
+  const items=stockRows.filter(r=>r.Type==='ITEM'||(r.Name&&r['Closing Qty']));
+  const groups=stockRows.filter(r=>r.Type==='GROUP');
+  el.innerHTML=`
+    <div class="kpi-grid">
+      <div class="kpi" style="--kpi-color:#059669"><div class="kpi-icon">📦</div><div class="kpi-lbl">Stock Items</div><div class="kpi-val">${items.length||stockRows.length}</div></div>
+      <div class="kpi" style="--kpi-color:#0891b2"><div class="kpi-icon">🗂️</div><div class="kpi-lbl">Stock Groups</div><div class="kpi-val">${groups.length}</div></div>
+      <div class="kpi" style="--kpi-color:#d97706"><div class="kpi-icon">💰</div><div class="kpi-lbl">Total Value</div><div class="kpi-val">${fmt(stockRows.reduce((s,r)=>s+parseAmt(r['Closing Value']||r['Closing Value (with Unit)']||'0'),0))}</div></div>
+    </div>
+    <div class="card">
+      <div class="card-hd"><div><div class="card-title">Stock Summary — Item wise</div><div class="card-sub">Individual item quantities and values from Tally</div></div>
+        <div style="display:flex;gap:5px">
+          <input type="text" class="search-input" id="stock_search" placeholder="Search item..." oninput="filterStock()">
+          <select class="ctrl" id="stock_grp" onchange="filterStock()"><option value="">All Groups</option>${[...new Set(stockRows.map(r=>r['Stock Group']||r.Group||'').filter(Boolean))].map(g=>`<option>${g}</option>`).join('')}</select>
+          <button class="dl-btn" onclick="dlSheet('Stock_Summary')">⬇ Download</button>
+        </div>
+      </div>
+      <div class="tbl-scroll" id="stock_tbl"></div>
+    </div>`;
+  window._stockRows=stockRows;
+  filterStock();
+}
+function filterStock(){
+  const s=(document.getElementById('stock_search')||{}).value?.toLowerCase()||'';
+  const grp=(document.getElementById('stock_grp')||{}).value||'';
+  const rows=(window._stockRows||[]).filter(r=>{
+    if(grp&&(r['Stock Group']||r.Group||'')!==grp)return false;
+    if(s&&!(r.Name||r.Item||'').toLowerCase().includes(s))return false;
+    return true;
+  }).slice(0,300);
+  const el=document.getElementById('stock_tbl');
+  const hdrs=['Company','Name','Stock Group','Type','Unit','Closing Qty','Closing Qty (with Unit)','Closing Rate','Closing Value'];
+  if(el)el.innerHTML=buildGenTable(rows,hdrs);
+}
+
+// ===================== CUSTOMER =====================
+function renderCustomer(){
+  const el=document.getElementById('tab-customer');
+  const salesRows=filtered.filter(r=>r.vchType==='Sales');
+  const receiptRows=filtered.filter(r=>r.vchType==='Receipt');
+  // ✅ Accept all rows — Type may be 'Receivable', 'Payable', or empty
+  // Filter: show Receivable type OR rows where Type is empty (assume Receivable)
+  const osAllRows=getSheetRows('Outstanding');
+  const osRows=osAllRows.filter(r=>{
+    const t=(r.Type||'').trim();
+    return t===''||t==='Receivable'||t==='receivable';
+  });
+  const byParty={};
+  salesRows.forEach(r=>{
+    const p=r.party||'Unknown';
+    if(!byParty[p])byParty[p]={name:p,company:r.company,totalSales:0,salesCnt:0,totalReceipt:0,outstanding:0,overdueDays:0,overdueAmt:0,creditDays:0,lastSale:null,state:r.state||'',gstin:r.gstin||''};
+    byParty[p].totalSales+=Math.abs(r.amount);byParty[p].salesCnt++;
+    if(!byParty[p].lastSale||r.date>byParty[p].lastSale)byParty[p].lastSale=r.date;
+  });
+  receiptRows.forEach(r=>{
+    const p=r.party||'Unknown';
+    if(!byParty[p])byParty[p]={name:p,company:r.company,totalSales:0,salesCnt:0,totalReceipt:0,outstanding:0,overdueDays:0,overdueAmt:0,creditDays:0,lastSale:null,state:'',gstin:''};
+    byParty[p].totalReceipt+=Math.abs(r.amount);
+  });
+  const now=new Date();
+  osRows.forEach(r=>{
+    const p=r.Party||r.Name||'';if(!p)return;
+    if(!byParty[p])byParty[p]={name:p,company:r.Company||'',totalSales:0,salesCnt:0,totalReceipt:0,outstanding:0,overdueDays:0,overdueAmt:0,creditDays:0,lastSale:null,state:'',gstin:''};
+    const amt=parseAmt(r.Amount||r['Pending Amount']||'0');
+    byParty[p].outstanding+=amt;
+    const dueD=parseDate(r['Due Date']||'');
+    const od=dueD?Math.max(0,Math.floor((now-dueD)/(1000*60*60*24))):parseInt(r['Overdue Days']||'0')||0;
+    if(od>byParty[p].overdueDays)byParty[p].overdueDays=od;
+    if(od>0)byParty[p].overdueAmt+=amt;
+  });
+  const parties=Object.values(byParty).sort((a,b)=>b.totalSales-a.totalSales);
+  function odClass(d){if(d===0)return'overdue-0';if(d<=30)return'overdue-30';if(d<=60)return'overdue-60';if(d<=90)return'overdue-90';return'overdue-90plus';}
+  el.innerHTML=`
+    <div class="kpi-grid">
+      <div class="kpi" style="--kpi-color:#2563eb"><div class="kpi-icon">👥</div><div class="kpi-lbl">Total Customers</div><div class="kpi-val">${parties.length}</div></div>
+      <div class="kpi" style="--kpi-color:#059669"><div class="kpi-icon">📈</div><div class="kpi-lbl">Total Sales</div><div class="kpi-val">${fmt(parties.reduce((s,p)=>s+p.totalSales,0))}</div></div>
+      <div class="kpi" style="--kpi-color:#7c3aed"><div class="kpi-icon">💰</div><div class="kpi-lbl">Total Receipts</div><div class="kpi-val">${fmt(receiptRows.reduce((s,r)=>s+Math.abs(r.amount),0))}</div></div>
+      <div class="kpi" style="--kpi-color:#dc2626"><div class="kpi-icon">⚠️</div><div class="kpi-lbl">Outstanding</div><div class="kpi-val">${fmt(parties.reduce((s,p)=>s+p.outstanding,0))}</div></div>
+      <div class="kpi" style="--kpi-color:#b91c1c"><div class="kpi-icon">🚨</div><div class="kpi-lbl">Overdue</div><div class="kpi-val" style="color:var(--red)">${fmt(parties.reduce((s,p)=>s+p.overdueAmt,0))}</div></div>
+    </div>
+    <div class="card">
+      <div class="card-hd"><div><div class="card-title">Customer-wise Summary</div></div>
+        <div style="display:flex;gap:5px">
+          <input type="text" class="search-input" id="cust_search" placeholder="Search..." oninput="filterCust()">
+          <select class="ctrl" id="cust_f" onchange="filterCust()">
+            <option value="">All</option><option value="overdue">Overdue only</option><option value="outstanding">Has outstanding</option>
+          </select>
+        </div>
+      </div>
+      <div class="tbl-scroll" id="cust_tbl"></div>
+    </div>`;
+  window._custParties=parties;window._odClassFn=odClass;
+  filterCust();
+}
+function filterCust(){
+  const s=(document.getElementById('cust_search')||{}).value?.toLowerCase()||'';
+  const f=(document.getElementById('cust_f')||{}).value||'';
+  const odClass=window._odClassFn||function(){return'';};
+  let list=(window._custParties||[]).filter(p=>{
+    if(s&&!p.name.toLowerCase().includes(s))return false;
+    if(f==='overdue'&&p.overdueAmt<=0)return false;
+    if(f==='outstanding'&&p.outstanding<=0)return false;
+    return true;
+  });
+  const el=document.getElementById('cust_tbl');if(!el)return;
+  el.innerHTML=`<table><thead><tr>
+    <th>Customer</th><th>Company</th><th>GSTIN</th><th>State</th>
+    <th style="text-align:right">Sales</th><th>Bills</th>
+    <th style="text-align:right">Receipts</th>
+    <th style="text-align:right">Outstanding</th>
+    <th style="text-align:right">Overdue</th>
+    <th>Max Overdue</th><th>Last Sale</th>
+  </tr></thead><tbody>${list.slice(0,300).map(p=>`<tr>
+    <td style="font-weight:600">${p.name}</td>
+    <td style="font-size:10px;color:var(--t2)">${p.company}</td>
+    <td style="font-family:monospace;font-size:10px;color:var(--t3)">${p.gstin||'--'}</td>
+    <td style="font-size:10px;color:var(--t2)">${p.state||'--'}</td>
+    <td class="amt" style="color:var(--blue)">${fmt(p.totalSales)}</td>
+    <td style="text-align:center">${p.salesCnt}</td>
+    <td class="amt" style="color:var(--purple)">${fmt(p.totalReceipt)}</td>
+    <td class="amt" style="color:${p.outstanding>0?'var(--amber)':'var(--green)'}">${fmt(p.outstanding)}</td>
+    <td class="amt" style="color:${p.overdueAmt>0?'var(--red)':'var(--green)'}">${p.overdueAmt>0?fmt(p.overdueAmt):'--'}</td>
+    <td>${p.overdueDays>0?`<span class="badge ${odClass(p.overdueDays)}">${p.overdueDays}d</span>`:'<span class="credit-ok">Current</span>'}</td>
+    <td style="font-size:10px;color:var(--t3)">${p.lastSale?fmtDate(p.lastSale):'--'}</td>
+  </tr>`).join('')}</tbody></table>`;
+}
+
+// ===================== PARTY LEDGER =====================
+function renderPartyLedger(){
+  const el=document.getElementById('tab-partyledger');
+  const allParties=[...new Set([...rawData.map(r=>r.party),...getSheetRows('Ledgers').map(r=>r.Name||'')].filter(Boolean))].sort();
+  el.innerHTML=`
+    <div class="card" style="margin-bottom:12px">
+      <div class="card-hd"><div><div class="card-title">Party Ledger Statement</div><div class="card-sub">Complete account statement like Tally</div></div></div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <div style="position:relative;flex:1;min-width:200px">
+          <input type="text" id="pl_party_input" placeholder="Type party name to search..."
+            style="width:100%;padding:9px 12px;border:1.5px solid var(--border);border-radius:var(--r-sm);font-size:12px;outline:none"
+            oninput="filterPartySearch()" autocomplete="off">
+          <div id="pl_dropdown" style="position:absolute;top:100%;left:0;right:0;background:var(--surface);border:1px solid var(--border);border-radius:0 0 8px 8px;max-height:200px;overflow-y:auto;z-index:999;display:none"></div>
+        </div>
+        <select class="ctrl" id="pl_type" onchange="loadPartyLedger()">
+          <option value="all">All types</option>
+          <option value="sales">Sales only</option>
+          <option value="purchase">Purchase only</option>
+          <option value="receipt">Receipt only</option>
+          <option value="payment">Payment only</option>
+        </select>
+        <button class="btn btn-primary" onclick="loadPartyLedger()">Load Ledger</button>
+      </div>
+    </div>
+    <div id="pl_content"></div>`;
+  window._allParties=allParties;window._selectedParty='';
+}
+function filterPartySearch(){
+  const val=(document.getElementById('pl_party_input')||{}).value?.toLowerCase()||'';
+  const dd=document.getElementById('pl_dropdown');if(!dd)return;
+  if(val.length<1){dd.style.display='none';return;}
+  const matches=(window._allParties||[]).filter(p=>p.toLowerCase().includes(val)).slice(0,20);
+  if(!matches.length){dd.style.display='none';return;}
+  dd.innerHTML=matches.map(p=>`<div onclick="selectParty('${p.replace(/'/g,"\\'")}');event.stopPropagation()"
+    style="padding:8px 12px;cursor:pointer;font-size:12px;border-bottom:1px solid var(--bg)"
+    onmouseover="this.style.background='var(--s2)'" onmouseout="this.style.background=''">${p}</div>`).join('');
+  dd.style.display='block';
+}
+function selectParty(name){
+  document.getElementById('pl_party_input').value=name;
+  document.getElementById('pl_dropdown').style.display='none';
+  window._selectedParty=name;loadPartyLedger();
+}
+function loadPartyLedger(){
+  const name=window._selectedParty||document.getElementById('pl_party_input')?.value?.trim();
+  if(!name){alert('Please select a party first');return;}
+  window._selectedParty=name;
+  const typeFilter=document.getElementById('pl_type')?.value||'all';
+  const el=document.getElementById('pl_content');if(!el)return;
+  let txns=rawData.filter(r=>(r.party||'').toLowerCase()===name.toLowerCase());
+  if(typeFilter!=='all'){
+    const typeMap={sales:'Sales',purchase:'Purchase',receipt:'Receipt',payment:'Payment'};
+    txns=txns.filter(r=>r.vchType===typeMap[typeFilter]);
+  }
+  txns=txns.sort((a,b)=>(a.date||0)-(b.date||0));
+  const ledgerInfo=getSheetRows('Ledgers').find(r=>(r.Name||'').toLowerCase()===name.toLowerCase())||{};
+  const osRows=getSheetRows('Outstanding').filter(r=>(r.Party||r.Name||'').toLowerCase()===name.toLowerCase());
+  const openingBal=parseAmt(ledgerInfo['Opening Balance']||'0');
+  let runBal=openingBal;
+  const ledgerRows=[];
+  if(openingBal!==0)ledgerRows.push({date:null,vchType:'Opening Balance',vchNo:'B/F',narration:'Opening Balance B/F',dr:openingBal>0?openingBal:0,cr:openingBal<0?Math.abs(openingBal):0,balance:openingBal,createdBy:''});
+  txns.forEach(r=>{
+    let dr=0,cr=0;const amt=Math.abs(r.amount);
+    if(['Sales','Debit Note'].includes(r.vchType))dr=amt;
+    else if(['Receipt','Credit Note'].includes(r.vchType))cr=amt;
+    else if(['Purchase'].includes(r.vchType))cr=amt;
+    else if(['Payment'].includes(r.vchType))dr=amt;
+    else if(r.vchType==='Journal'){if(r.amount>=0)dr=amt;else cr=amt;}
+    else dr=amt;
+    runBal=runBal+dr-cr;
+    ledgerRows.push({date:r.date,vchType:r.vchType,vchNo:r.vchNo,narration:r.narration||'',dr,cr,balance:runBal,createdBy:r.createdBy||''});
+  });
+  const totalDr=ledgerRows.reduce((s,r)=>s+r.dr,0);
+  const totalCr=ledgerRows.reduce((s,r)=>s+r.cr,0);
+  const totalSales=txns.filter(r=>r.vchType==='Sales').reduce((s,r)=>s+Math.abs(r.amount),0);
+  const totalReceipts=txns.filter(r=>r.vchType==='Receipt').reduce((s,r)=>s+Math.abs(r.amount),0);
+  const VB={Sales:'background:#eff6ff;color:#2563eb',Purchase:'background:#ecfdf5;color:#059669',Receipt:'background:#f5f3ff;color:#7c3aed',Payment:'background:#fffbeb;color:#d97706',Journal:'background:#fff7ed;color:#f97316','Opening Balance':'background:#f1f5f9;color:#64748b'};
+  el.innerHTML=`
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:14px 18px;margin-bottom:12px">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:10px">
+        <div>
+          <div style="font-size:16px;font-weight:700">${name}</div>
+          <div style="font-size:11px;color:var(--t2);margin-top:3px">
+            ${ledgerInfo.Group?`<span style="background:var(--s2);padding:2px 8px;border-radius:10px;margin-right:6px">${ledgerInfo.Group}</span>`:''}
+            ${ledgerInfo.GSTIN?`<span style="font-family:monospace">GSTIN: ${ledgerInfo.GSTIN}</span>`:''}
+            ${ledgerInfo.State?`<span style="margin-left:8px">📍 ${ledgerInfo.State}</span>`:''}
+            ${ledgerInfo.Mobile?`<span style="margin-left:8px">📞 ${ledgerInfo.Mobile}</span>`:''}
+          </div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:11px;color:var(--t3)">Closing Balance</div>
+          <div style="font-size:20px;font-weight:700;color:${runBal>=0?'var(--blue)':'var(--red)'}">${fmt(Math.abs(runBal))} ${runBal>=0?'Dr':'Cr'}</div>
+        </div>
+      </div>
+    </div>
+    <div class="kpi-grid" style="margin-bottom:12px">
+      <div class="kpi" style="--kpi-color:#2563eb"><div class="kpi-lbl">Sales</div><div class="kpi-val">${fmt(totalSales)}</div><div class="kpi-sub">${txns.filter(r=>r.vchType==='Sales').length} bills</div></div>
+      <div class="kpi" style="--kpi-color:#7c3aed"><div class="kpi-lbl">Receipts</div><div class="kpi-val">${fmt(totalReceipts)}</div><div class="kpi-sub">${txns.filter(r=>r.vchType==='Receipt').length} receipts</div></div>
+      <div class="kpi" style="--kpi-color:#059669"><div class="kpi-lbl">Purchase</div><div class="kpi-val">${fmt(txns.filter(r=>r.vchType==='Purchase').reduce((s,r)=>s+Math.abs(r.amount),0))}</div></div>
+      <div class="kpi" style="--kpi-color:#d97706"><div class="kpi-lbl">Payments</div><div class="kpi-val">${fmt(txns.filter(r=>r.vchType==='Payment').reduce((s,r)=>s+Math.abs(r.amount),0))}</div></div>
+    </div>
+    ${osRows.length?`<div class="card" style="margin-bottom:12px">
+      <div class="card-hd"><div><div class="card-title">Pending Bills</div></div></div>
+      <div class="tbl-scroll">${buildGenTable(osRows,['Type','Bill No','Date','Due Date','Overdue Days','Amount'])}</div>
+    </div>`:''}
+    <div class="card">
+      <div class="card-hd">
+        <div><div class="card-title">Ledger Statement</div><div class="card-sub">${ledgerRows.length} entries</div></div>
+        <div style="display:flex;gap:5px">
+          <input type="text" class="search-input" id="pl_search" placeholder="Search..." oninput="filterLedger()">
+          <button class="dl-btn" onclick="dlLedger()">⬇ Download</button>
+        </div>
+      </div>
+      <div class="tbl-scroll" id="pl_ledger_tbl"></div>
+      <div style="display:flex;gap:20px;padding:10px 14px;background:var(--s2);border-top:2px solid var(--border);font-size:11px;font-weight:700">
+        <span>Total Dr: <span style="color:var(--blue)">${fmt(totalDr)}</span></span>
+        <span>Total Cr: <span style="color:var(--green)">${fmt(totalCr)}</span></span>
+        <span>Closing: <span style="color:${runBal>=0?'var(--blue)':'var(--red)'}">${fmt(Math.abs(runBal))} ${runBal>=0?'Dr':'Cr'}</span></span>
+      </div>
+    </div>`;
+  window._plLedgerRows=ledgerRows;window._VTYPE_BADGE=VB;
+  filterLedger();
+}
+function filterLedger(){
+  const s=(document.getElementById('pl_search')||{}).value?.toLowerCase()||'';
+  const rows=(window._plLedgerRows||[]).filter(r=>!s||!(r.vchNo||'').toLowerCase().includes(s)===false&&!(r.narration||'').toLowerCase().includes(s)===false?true:
+    (r.vchNo||'').toLowerCase().includes(s)||(r.narration||'').toLowerCase().includes(s)||(r.vchType||'').toLowerCase().includes(s));
+  const VB=window._VTYPE_BADGE||{};
+  const el=document.getElementById('pl_ledger_tbl');if(!el)return;
+  el.innerHTML=`<table><thead><tr><th>Date</th><th>Vch Type</th><th>Vch No</th><th>Narration</th><th style="text-align:right">Dr</th><th style="text-align:right">Cr</th><th style="text-align:right">Balance</th><th>Entered By</th></tr></thead>
+  <tbody>${rows.map(r=>`<tr>
+    <td>${r.date?fmtDate(r.date):'--'}</td>
+    <td><span class="badge" style="${VB[r.vchType]||'background:#f1f5f9;color:#64748b'}">${r.vchType}</span></td>
+    <td style="font-family:monospace;font-size:10px">${r.vchNo||'--'}</td>
+    <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;color:var(--t2)">${r.narration||'--'}</td>
+    <td class="amt" style="color:var(--blue)">${r.dr?fmt(r.dr):'--'}</td>
+    <td class="amt" style="color:var(--green)">${r.cr?fmt(r.cr):'--'}</td>
+    <td class="amt" style="font-weight:700;color:${r.balance>=0?'var(--blue)':'var(--red)'}">${fmt(Math.abs(r.balance))} ${r.balance>=0?'Dr':'Cr'}</td>
+    <td style="font-size:10px;color:var(--t3)">${r.createdBy||'--'}</td>
+  </tr>`).join('')}</tbody></table>`;
+}
+function dlLedger(){
+  const rows=(window._plLedgerRows||[]);
+  const data=[['Date','Vch Type','Vch No','Narration','Dr Amount','Cr Amount','Balance','Entered By'],
+    ...rows.map(r=>[r.date?fmtDate(r.date):'',r.vchType||'',r.vchNo||'',r.narration||'',r.dr||'',r.cr||'',fmt(Math.abs(r.balance))+(r.balance>=0?' Dr':' Cr'),r.createdBy||''])];
+  dlCSV(data,'party_ledger_'+(window._selectedParty||'').replace(/[^a-z0-9]/gi,'_'));
+}
+
+// ===================== COLLECTIONS =====================
+function renderCollections(){
+  const el=document.getElementById('tab-collections');
+  const now=new Date();
+  // ✅ Accept all rows — Type may be 'Receivable', 'Payable', or empty
+  // Filter: show Receivable type OR rows where Type is empty (assume Receivable)
+  const osAllRows=getSheetRows('Outstanding');
+  const osRows=osAllRows.filter(r=>{
+    const t=(r.Type||'').trim();
+    return t===''||t==='Receivable'||t==='receivable';
+  });
+  const receiptRows=rawData.filter(r=>r.vchType==='Receipt');
+  const PM={};
+  function getOrCreateP(name,company){
+    if(!PM[name])PM[name]={name,company:company||'',bills:[],receipts:[],totalOpening:0,totalPending:0,oldestDate:null};
+    return PM[name];
+  }
+  // Debug
+  console.log('Outstanding rows total:', osAllRows.length, 'Receivable:', osRows.length);
+  if(osAllRows.length>0){console.log('Columns:', Object.keys(osAllRows[0]));console.log('Sample:', osAllRows[0]);}
+
+  if(osAllRows.length===0){
+    el.innerHTML='<div style="text-align:center;padding:60px;color:var(--t3)"><div style="font-size:32px;margin-bottom:12px">📋</div><div style="font-size:16px;font-weight:600;margin-bottom:8px">No Outstanding Data</div><div>Click Restart in LekhaSetu → wait for master sync</div></div>';
+    return;
+  }
+
+  if(osRows.length===0){
+    const sample=osAllRows[0];
+    el.innerHTML=`<div style="text-align:center;padding:40px;color:var(--t3)">
+      <div style="font-size:16px;font-weight:600;margin-bottom:12px">⚠️ Data found but Type mismatch</div>
+      <div style="font-size:12px;line-height:2;background:var(--s2);padding:16px;border-radius:8px;text-align:left;max-width:500px;margin:0 auto">
+        <b>Rows in Outstanding tab:</b> ${osAllRows.length}<br>
+        <b>Columns found:</b> ${Object.keys(sample).join(', ')}<br>
+        <b>Type value in data:</b> "${sample.Type||'(empty)'}"<br>
+        <b>Party column:</b> "${sample.Party||sample['Party Name']||sample.Ledger||'(not found)'}"<br>
+        <b>Amount column:</b> "${sample.Amount||sample['Pending Amount']||'(not found)'}"
+      </div>
+    </div>`;
+    return;
+  }
+
+  if(osRows.length>0){
+    const seenBills={};
+    osRows.forEach(r=>{
+      // ✅ Try all possible party column names
+      const name=(r.Party||r['Party Name']||r.Ledger||r.Name||'').trim();if(!name)return;
+      const billNo=(r['Bill No']||r.Ref||r['Bill No.']||r.BillNo||'').trim();
+      const key=name+'||'+billNo;
+      if(seenBills[key])return;seenBills[key]=true;
+      const p=getOrCreateP(name,r.Company||'');
+      const opening=parseAmt(r.Amount||r['Pending Amount']||r['Closing Balance']||'0');if(!opening)return;
+      const billDate=parseDate(r.Date||r['Bill Date']||'');
+      const dueDate=parseDate(r['Due Date']||'');
+      // ✅ Always recalculate from Due Date for accuracy
+      const od=parseInt(r['Overdue Days']||'0')||0;
+      const overdueDays=dueDate?Math.max(0,Math.floor((now-dueDate)/86400000)):
+        billDate?Math.max(0,Math.floor((now-billDate)/86400000)):od;
+      const creditDays=(billDate&&dueDate)?Math.floor((dueDate-billDate)/86400000):0;
+      p.bills.push({code:billNo||'--',opening,pending:opening,paidAmt:0,billDate,dueDate,overdueDays,creditDays,receiptAllocations:[]});
+      p.totalOpening+=opening;p.totalPending+=opening;
+      if(!p.oldestDate||(billDate&&billDate<p.oldestDate))p.oldestDate=billDate;
+    });
+  }
+  receiptRows.forEach(r=>{
+    const name=(r.party||'').trim();if(!PM[name])return;
+    PM[name].receipts.push({date:r.date,receiptNo:r.vchNo||'--',amount:Math.abs(r.amount),remaining:Math.abs(r.amount),narration:r.narration||'',createdBy:r.createdBy||'',billAllocations:[]});
+  });
+  Object.values(PM).forEach(party=>{
+    const sortedRecs=[...party.receipts].sort((a,b)=>(a.date||0)-(b.date||0));
+    const sortedBills=[...party.bills].sort((a,b)=>(a.billDate||0)-(b.billDate||0));
+    sortedRecs.forEach(receipt=>{
+      let remaining=receipt.amount;
+      sortedBills.forEach(bill=>{
+        if(remaining<=0||bill.pending<=0)return;
+        const applied=Math.min(remaining,bill.pending);
+        bill.pending=Math.max(0,bill.pending-applied);bill.paidAmt+=applied;remaining-=applied;
+        bill.receiptAllocations.push({receiptNo:receipt.receiptNo,date:receipt.date,applied,pendingAfter:bill.pending});
+        receipt.billAllocations.push({code:bill.code,applied,pendingAfter:bill.pending});
+      });
+      receipt.remaining=remaining;
+    });
+    party.totalPending=party.bills.reduce((s,b)=>s+b.pending,0);
+  });
+  const parties=Object.values(PM).filter(p=>p.bills.length>0).sort((a,b)=>b.totalPending-a.totalPending);
+  const totPending=parties.reduce((s,p)=>s+p.totalPending,0);
+  const totOpening=parties.reduce((s,p)=>s+p.totalOpening,0);
+  const totCollected=parties.reduce((s,p)=>p.receipts.reduce((ss,r)=>ss+r.amount,0)+s,0);
+  window._collMap={};parties.forEach(p=>{window._collMap[p.name]=p;});
+  window._collParties=parties;
+  el.innerHTML=`
+    <div class="kpi-grid" style="margin-bottom:14px">
+      <div class="kpi" style="--kpi-color:#dc2626"><div class="kpi-icon">📋</div><div class="kpi-lbl">Total Pending</div><div class="kpi-val" style="color:var(--red)">${fmt(totPending)}</div><div class="kpi-sub">${parties.length} parties</div></div>
+      <div class="kpi" style="--kpi-color:#2563eb"><div class="kpi-icon">📂</div><div class="kpi-lbl">Total Billed</div><div class="kpi-val">${fmt(totOpening)}</div></div>
+      <div class="kpi" style="--kpi-color:#059669"><div class="kpi-icon">💰</div><div class="kpi-lbl">Collected</div><div class="kpi-val" style="color:var(--green)">${fmt(totCollected)}</div></div>
+      <div class="kpi" style="--kpi-color:#b91c1c"><div class="kpi-icon">🚨</div><div class="kpi-lbl">Critical &gt;90d</div><div class="kpi-val" style="color:#b91c1c">${parties.filter(p=>p.bills.some(b=>b.overdueDays>90&&b.pending>0)).length}</div><div class="kpi-sub">Parties</div></div>
+    </div>
+    <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center">
+      <input type="text" id="coll_search" placeholder="🔍 Search party..."
+        style="flex:1;min-width:200px;padding:9px 14px;border:1.5px solid var(--border);border-radius:8px;font-size:12px;outline:none" oninput="filterColl()">
+      <select class="ctrl" id="coll_f" onchange="filterColl()">
+        <option value="all">All parties</option><option value="overdue">Overdue only</option>
+        <option value="critical">Critical &gt;90 days</option><option value="current">Current only</option>
+      </select>
+      <select class="ctrl" id="coll_s" onchange="filterColl()">
+        <option value="pending">Sort: Pending</option><option value="oldest">Sort: Oldest bill</option>
+        <option value="days">Sort: Most overdue</option><option value="name">Sort: Name A-Z</option>
+      </select>
+    </div>
+    <div style="background:var(--s2);border:1px solid var(--border);border-radius:10px 10px 0 0;padding:10px 20px;display:grid;grid-template-columns:100px 1fr 130px 140px 125px 170px;gap:8px;font-size:10px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.04em">
+      <span>STATUS</span><span>PARTY NAME</span><span style="text-align:right">OPENING</span><span style="text-align:right">PENDING</span><span>OLDEST BILL</span><span>AGING</span>
+    </div>
+    <div id="coll_list" style="border:1px solid var(--border);border-top:none;border-radius:0 0 10px 10px;overflow:hidden;background:var(--surface);margin-bottom:20px"></div>
+    <div id="coll_modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;align-items:center;justify-content:center;padding:20px" onclick="if(event.target===this)closeCM()">
+      <div style="background:var(--surface);border-radius:14px;width:100%;max-width:900px;max-height:90vh;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 24px 80px rgba(0,0,0,.35)">
+        <div style="padding:20px 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
+          <div><div id="cm_name" style="font-size:17px;font-weight:700;color:var(--blue)">Party</div><div style="font-size:11px;color:var(--t3);margin-top:3px">Invoices &amp; Payment History</div></div>
+          <button onclick="closeCM()" style="width:30px;height:30px;border-radius:50%;border:none;background:var(--bg);cursor:pointer;font-size:15px">✕</button>
+        </div>
+        <div id="cm_body" style="overflow-y:auto;padding:20px 24px;flex:1"></div>
+      </div>
+    </div>`;
+  filterColl();
+}
+function filterColl(){
+  const s=(document.getElementById('coll_search')||{}).value?.toLowerCase()||'';
+  const f=(document.getElementById('coll_f')||{}).value||'all';
+  const srt=(document.getElementById('coll_s')||{}).value||'pending';
+  let list=(window._collParties||[]).filter(p=>{
+    if(s&&!p.name.toLowerCase().includes(s))return false;
+    const maxOD=p.bills.filter(b=>b.pending>0).reduce((m,b)=>Math.max(m,b.overdueDays),0);
+    if(f==='overdue'&&maxOD===0)return false;
+    if(f==='critical'&&maxOD<=90)return false;
+    if(f==='current'&&maxOD>0)return false;
+    return true;
+  });
+  if(srt==='oldest')list=[...list].sort((a,b)=>(a.oldestDate||0)-(b.oldestDate||0));
+  else if(srt==='days')list=[...list].sort((a,b)=>b.bills.reduce((m,b)=>Math.max(m,b.overdueDays),0)-a.bills.reduce((m,b)=>Math.max(m,b.overdueDays),0));
+  else if(srt==='name')list=[...list].sort((a,b)=>a.name.localeCompare(b.name));
+  const el=document.getElementById('coll_list');if(!el)return;
+  if(!list.length){el.innerHTML='<div style="text-align:center;padding:40px;color:var(--t3)">No parties found</div>';return;}
+  el.innerHTML=list.map(p=>{
+    const pb=p.bills.filter(b=>b.pending>0);
+    const maxOD=pb.reduce((m,b)=>Math.max(m,b.overdueDays),0);
+    const dotC=maxOD===0?'#059669':maxOD<=30?'#d97706':maxOD<=90?'#dc2626':'#7f1d1d';
+    const pendC=maxOD===0?'var(--t1)':'#dc2626';
+    const aging=maxOD===0?`<span style="color:#059669;font-size:12px;font-weight:600">✓ Current</span>`:
+      `<div><span style="background:#fef2f2;border:1px solid #fecaca;border-radius:6px;padding:4px 10px;font-size:11px;font-weight:700;color:#dc2626">⚠ OVERDUE</span><div style="font-size:10px;color:var(--t3);margin-top:3px">⏱ ${maxOD} days late</div></div>`;
+    const en=p.name.replace(/"/g,'&quot;');
+    return`<div data-name="${en}" style="display:grid;grid-template-columns:100px 1fr 130px 140px 125px 170px;gap:8px;padding:15px 20px;border-bottom:1px solid var(--border);cursor:pointer;align-items:center;transition:background .12s"
+      onmouseover="this.style.background='var(--s2)'" onmouseout="this.style.background=''"
+      onclick="openCM(this.dataset.name)">
+      <div><div style="background:var(--s2);border:1px solid var(--border);border-radius:6px;padding:4px 9px;font-size:11px;font-weight:700;display:inline-block"><span style="color:${dotC}">●</span> ${pb.length} Bill(s)</div></div>
+      <div><div style="font-size:13px;font-weight:700">${p.name}</div>${p.company?`<div style="font-size:10px;color:var(--t3);margin-top:1px">${p.company}</div>`:''}</div>
+      <div style="text-align:right"><div style="font-size:13px;font-weight:600;color:var(--t2)">₹${Math.round(p.totalOpening).toLocaleString('en-IN')}</div><div style="font-size:9px;color:var(--t3)">Opening</div></div>
+      <div style="text-align:right"><div style="font-size:14px;font-weight:700;color:${pendC}">₹${Math.round(p.totalPending).toLocaleString('en-IN')}</div><div style="font-size:9px;color:var(--t3)">Pending</div></div>
+      <div style="font-size:11px;color:var(--t2)">${p.oldestDate?fmtDate(p.oldestDate):'--'}</div>
+      <div>${aging}</div>
+    </div>`;
+  }).join('');
+}
+function openCM(name){
+  const p=(window._collMap||{})[name];if(!p){console.warn('Party not found:',name);return;}
+  document.getElementById('cm_name').textContent=name;
+  document.getElementById('coll_modal').style.display='flex';
+  const now=new Date();
+  const pendingBills=p.bills.filter(b=>b.pending>0).sort((a,b)=>(a.billDate||0)-(b.billDate||0));
+  const sortedRecs=p.receipts.sort((a,b)=>(a.date||0)-(b.date||0));
+  const totalPaid=sortedRecs.reduce((s,r)=>s+r.amount,0);
+  const totalPending=p.bills.reduce((s,b)=>s+b.pending,0);
+  function sp(days){if(days===0)return`<span style="border:1.5px solid #6ee7b7;color:#059669;padding:2px 10px;border-radius:20px;font-size:10px;font-weight:700">Current</span>`;
+    const c=days<=30?'#d97706':days<=60?'#f97316':'#dc2626';const b=days<=30?'#fde68a':days<=60?'#fed7aa':'#fca5a5';
+    return`<span style="border:1.5px solid ${b};color:${c};padding:2px 10px;border-radius:20px;font-size:10px;font-weight:700">OVERDUE (${days}D)</span>`;}
+  document.getElementById('cm_body').innerHTML=`
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:22px">
+      ${[['Opening Billed','var(--t2)',fmt(p.totalOpening),''],['Total Paid','#059669',fmt(totalPaid),'background:#f0fdf4;border:1px solid #bbf7d0'],['Still Pending','#dc2626',fmt(totalPending),'background:#fef2f2;border:1px solid #fecaca'],['Bills','var(--t1)',`${pendingBills.length} pending / ${p.bills.length} total`,'']].map(([label,color,val,bg])=>`
+        <div style="border-radius:8px;padding:14px;text-align:center;border:1px solid var(--border);${bg}">
+          <div style="font-size:10px;text-transform:uppercase;color:${color};opacity:.7;margin-bottom:5px">${label}</div>
+          <div style="font-size:17px;font-weight:700;color:${color}">${val}</div>
+        </div>`).join('')}
+    </div>
+    <div style="font-size:12px;font-weight:700;color:var(--t2);margin-bottom:10px">📋 Pending Invoices (${pendingBills.length})</div>
+    ${pendingBills.length?`<div style="border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:24px">
+    <table style="width:100%;border-collapse:collapse;font-size:12px">
+      <thead><tr style="background:var(--s2)">
+        <th style="padding:9px 14px;text-align:left;font-size:10px;font-weight:700;color:var(--t3);border-bottom:1px solid var(--border)">Bill No</th>
+        <th style="padding:9px 14px;text-align:right;font-size:10px;font-weight:700;color:var(--t3);border-bottom:1px solid var(--border)">Opening</th>
+        <th style="padding:9px 14px;text-align:right;font-size:10px;font-weight:700;color:var(--green);border-bottom:1px solid var(--border)">Paid</th>
+        <th style="padding:9px 14px;text-align:right;font-size:10px;font-weight:700;color:var(--red);border-bottom:1px solid var(--border)">Pending</th>
+        <th style="padding:9px 14px;text-align:left;font-size:10px;font-weight:700;color:var(--t3);border-bottom:1px solid var(--border)">Bill Date</th>
+        <th style="padding:9px 14px;text-align:left;font-size:10px;font-weight:700;color:var(--t3);border-bottom:1px solid var(--border)">Due Date</th>
+        <th style="padding:9px 14px;text-align:center;font-size:10px;font-weight:700;color:var(--t3);border-bottom:1px solid var(--border)">Credit Days</th>
+        <th style="padding:9px 14px;text-align:left;font-size:10px;font-weight:700;color:var(--t3);border-bottom:1px solid var(--border)">Status</th>
+      </tr></thead>
+      <tbody>${pendingBills.map(b=>`<tr>
+        <td style="padding:10px 14px;border-bottom:1px solid var(--bg)"><span style="background:var(--s2);border:1px solid var(--border);padding:2px 9px;border-radius:5px;font-family:monospace;font-size:11px;font-weight:600">${b.code}</span></td>
+        <td style="padding:10px 14px;border-bottom:1px solid var(--bg);text-align:right;color:var(--t2)">₹${Math.round(b.opening).toLocaleString('en-IN')}</td>
+        <td style="padding:10px 14px;border-bottom:1px solid var(--bg);text-align:right;color:#059669;font-weight:600">${b.paidAmt>0?'₹'+Math.round(b.paidAmt).toLocaleString('en-IN'):'--'}</td>
+        <td style="padding:10px 14px;border-bottom:1px solid var(--bg);text-align:right;font-weight:700;color:#dc2626">₹${Math.round(b.pending).toLocaleString('en-IN')}</td>
+        <td style="padding:10px 14px;border-bottom:1px solid var(--bg);color:var(--t2)">${b.billDate?fmtDate(b.billDate):'--'}</td>
+        <td style="padding:10px 14px;border-bottom:1px solid var(--bg);color:var(--t2)">${b.dueDate?fmtDate(b.dueDate):'--'}</td>
+        <td style="padding:10px 14px;border-bottom:1px solid var(--bg);text-align:center;color:var(--t3)">${b.creditDays||'--'}</td>
+        <td style="padding:10px 14px;border-bottom:1px solid var(--bg)">${sp(b.overdueDays)}</td>
+      </tr>${b.receiptAllocations.length?`<tr style="background:#f0fdf4"><td colspan="8" style="padding:5px 14px;font-size:10px;color:var(--t3)">💳 Paid via: ${b.receiptAllocations.map(a=>`<span style="background:#dcfce7;border:1px solid #6ee7b7;border-radius:4px;padding:1px 8px;margin-right:5px;font-weight:600;color:#059669">${a.receiptNo} — ₹${Math.round(a.applied).toLocaleString('en-IN')}</span>`).join('')}</td></tr>`:''}`).join('')}
+      </tbody>
+      <tfoot><tr style="background:var(--s2);font-weight:700;font-size:11px">
+        <td style="padding:10px 14px">TOTAL</td>
+        <td style="padding:10px 14px;text-align:right">₹${Math.round(pendingBills.reduce((s,b)=>s+b.opening,0)).toLocaleString('en-IN')}</td>
+        <td style="padding:10px 14px;text-align:right;color:#059669">₹${Math.round(pendingBills.reduce((s,b)=>s+b.paidAmt,0)).toLocaleString('en-IN')}</td>
+        <td style="padding:10px 14px;text-align:right;color:#dc2626">₹${Math.round(pendingBills.reduce((s,b)=>s+b.pending,0)).toLocaleString('en-IN')}</td>
+        <td colspan="4"></td>
+      </tr></tfoot>
+    </table></div>`:`<div style="background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:20px;text-align:center;color:var(--t3);margin-bottom:24px">No pending bills ✓</div>`}
+    <div style="font-size:12px;font-weight:700;color:var(--t2);margin-bottom:10px">💰 All Receipts (${sortedRecs.length})</div>
+    ${sortedRecs.length?`<div style="border:1px solid var(--border);border-radius:8px;overflow:hidden">
+    <table style="width:100%;border-collapse:collapse;font-size:12px">
+      <thead><tr style="background:var(--s2)">
+        <th style="padding:9px 14px;font-size:10px;font-weight:700;color:var(--t3);border-bottom:1px solid var(--border)">Date</th>
+        <th style="padding:9px 14px;font-size:10px;font-weight:700;color:var(--t3);border-bottom:1px solid var(--border)">Receipt No</th>
+        <th style="padding:9px 14px;text-align:right;font-size:10px;font-weight:700;color:var(--green);border-bottom:1px solid var(--border)">Amount</th>
+        <th style="padding:9px 14px;font-size:10px;font-weight:700;color:var(--t3);border-bottom:1px solid var(--border)">Applied to Bills</th>
+        <th style="padding:9px 14px;text-align:right;font-size:10px;font-weight:700;color:var(--red);border-bottom:1px solid var(--border)">Unallocated</th>
+        <th style="padding:9px 14px;font-size:10px;font-weight:700;color:var(--t3);border-bottom:1px solid var(--border)">Narration</th>
+      </tr></thead>
+      <tbody>${sortedRecs.map(r=>`<tr>
+        <td style="padding:10px 14px;border-bottom:1px solid var(--bg);color:var(--t2)">${r.date?fmtDate(r.date):'--'}</td>
+        <td style="padding:10px 14px;border-bottom:1px solid var(--bg)"><span style="background:#f0fdf4;border:1px solid #6ee7b7;padding:2px 9px;border-radius:5px;font-family:monospace;font-size:11px;font-weight:600;color:#059669">${r.receiptNo}</span></td>
+        <td style="padding:10px 14px;border-bottom:1px solid var(--bg);text-align:right;font-weight:700;color:#059669">₹${Math.round(r.amount).toLocaleString('en-IN')}</td>
+        <td style="padding:10px 14px;border-bottom:1px solid var(--bg);font-size:10px">${r.billAllocations.length?r.billAllocations.map(a=>`<span style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:4px;padding:1px 7px;font-weight:600;color:var(--blue);margin-right:4px">${a.code}: ₹${Math.round(a.applied).toLocaleString('en-IN')}</span>`).join(''):'No allocation'}</td>
+        <td style="padding:10px 14px;border-bottom:1px solid var(--bg);text-align:right;color:var(--red)">${r.remaining>1?'₹'+Math.round(r.remaining).toLocaleString('en-IN'):'<span style="color:#059669">Fully applied</span>'}</td>
+        <td style="padding:10px 14px;border-bottom:1px solid var(--bg);max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--t3);font-size:10px">${r.narration||'--'}</td>
+      </tr>`).join('')}
+      </tbody>
+      <tfoot><tr style="background:var(--s2);font-weight:700;font-size:11px">
+        <td colspan="2" style="padding:10px 14px">TOTAL RECEIVED</td>
+        <td style="padding:10px 14px;text-align:right;color:#059669">₹${Math.round(totalPaid).toLocaleString('en-IN')}</td>
+        <td colspan="3"></td>
+      </tr></tfoot>
+    </table></div>`:`<div style="background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:24px;text-align:center;color:var(--t3)">No payment history found.</div>`}`;
+}
+function closeCM(){const modal=document.getElementById('coll_modal');if(modal)modal.style.display='none';}
+
+// ===================== AUDIT =====================
+function renderAudit(){
+  const el=document.getElementById('tab-audit');
+  const auditRows=getSheetRows('Full_Audit_Log');
+  const editRows=getSheetRows('Edit_Delete_Log');
+  el.innerHTML=`
+    <div class="kpi-grid">
+      <div class="kpi" style="--kpi-color:#059669"><div class="kpi-lbl">Created</div><div class="kpi-val">${auditRows.filter(r=>(r.Action||'').toUpperCase()==='CREATED').length}</div></div>
+      <div class="kpi" style="--kpi-color:#d97706"><div class="kpi-lbl">Edited</div><div class="kpi-val">${auditRows.filter(r=>(r.Action||'').toUpperCase()==='EDITED').length}</div></div>
+      <div class="kpi" style="--kpi-color:#dc2626"><div class="kpi-lbl">Deleted</div><div class="kpi-val">${auditRows.filter(r=>(r.Action||'').toUpperCase()==='DELETED').length}</div></div>
+    </div>
+    <div class="card" style="margin-bottom:12px">
+      <div class="card-hd"><div><div class="card-title">Full Audit Log</div></div>
+        <div style="display:flex;gap:5px">
+          <input type="text" class="search-input" id="audit_search" placeholder="Search user/party..." oninput="filterAudit()">
+          <select class="ctrl" id="audit_action" onchange="filterAudit()"><option value="">All actions</option><option>CREATED</option><option>EDITED</option><option>DELETED</option></select>
+          <button class="dl-btn" onclick="dlSheet('Full_Audit_Log')">⬇ Download</button>
+        </div>
+      </div>
+      <div class="tbl-scroll" id="audit_tbl"></div>
+    </div>
+    <div class="card">
+      <div class="card-hd"><div><div class="card-title">Edit Delete Log</div></div><button class="dl-btn" onclick="dlSheet('Edit_Delete_Log')">⬇ Download</button></div>
+      <div class="tbl-scroll">${buildGenTable(editRows,['Timestamp','Company','Action','Vch No','Vch Type','Date','Party','Old Amount','New Amount','Details'])}</div>
+    </div>`;
+  window._auditRows=auditRows;filterAudit();
+}
+function filterAudit(){
+  const s=(document.getElementById('audit_search')||{}).value?.toLowerCase()||'';
+  const a=(document.getElementById('audit_action')||{}).value||'';
+  const rows=(window._auditRows||[]).filter(r=>(!s||((r['Done By']||r['Created By']||r.Party||'').toLowerCase().includes(s)))&&(!a||(r.Action||'').toUpperCase()===a)).slice(0,200);
+  const el=document.getElementById('audit_tbl');if(!el)return;
+  const COLOR={CREATED:'#ecfdf5',EDITED:'#fefce8',DELETED:'#fef2f2'};
+  el.innerHTML=`<table><thead><tr><th>Event Time</th><th>Action</th><th>Done By</th><th>Vch No</th><th>Vch Type</th><th>Vch Date</th><th>Party</th><th style="text-align:right">Amount</th><th>Machine/IP</th></tr></thead><tbody>${
+    rows.map(r=>`<tr style="background:${COLOR[(r.Action||'').toUpperCase()]||''}">
+      <td style="font-size:10px">${r['Event Time']||'--'}</td>
+      <td><span class="badge" style="background:${COLOR[(r.Action||'').toUpperCase()]||'#f1f5f9'};color:${r.Action==='CREATED'?'#059669':r.Action==='EDITED'?'#d97706':'#dc2626'}">${r.Action||'--'}</span></td>
+      <td style="font-weight:600">${r['Done By']||r['Created By']||'--'}</td>
+      <td style="font-family:monospace;font-size:10px">${r['Vch No']||'--'}</td>
+      <td>${r['Vch Type']||'--'}</td>
+      <td>${r['Vch Date']||'--'}</td>
+      <td>${r.Party||'--'}</td>
+      <td class="amt">${r.Amount?fmt(parseAmt(r.Amount)):'--'}</td>
+      <td style="font-size:10px;color:var(--t3)">${r['Machine/IP']||'--'}</td>
+    </tr>`).join('')
+  }</tbody></table>`;
+}
+
+// ===================== GST =====================
+function renderGST(){
+  const el=document.getElementById('tab-gst');
+  const sales=filtered.filter(r=>r.vchType==='Sales').reduce((s,r)=>s+Math.abs(r.amount),0);
+  const purchase=filtered.filter(r=>r.vchType==='Purchase').reduce((s,r)=>s+Math.abs(r.amount),0);
+  const rcm=filtered.filter(r=>r.vchType==='RCM').reduce((s,r)=>s+Math.abs(r.amount),0);
+  const output=sales*0.18,itc=purchase*0.18,net=Math.max(0,output-itc+rcm);
+  el.innerHTML=`
+    <div class="kpi-grid">
+      <div class="kpi" style="--kpi-color:#dc2626"><div class="kpi-lbl">Output GST (est.)</div><div class="kpi-val">${fmt(output)}</div><div class="kpi-sub">@18% on sales</div></div>
+      <div class="kpi" style="--kpi-color:#059669"><div class="kpi-lbl">ITC Available (est.)</div><div class="kpi-val">${fmt(itc)}</div><div class="kpi-sub">@18% on purchase</div></div>
+      <div class="kpi" style="--kpi-color:#0891b2"><div class="kpi-lbl">RCM Payable</div><div class="kpi-val">${fmt(rcm)}</div></div>
+      <div class="kpi" style="--kpi-color:#d97706"><div class="kpi-lbl">Net GST Payable</div><div class="kpi-val" style="color:var(--red)">${fmt(net)}</div><div class="kpi-sub">Output - ITC + RCM</div></div>
+    </div>
+    <div class="grid-2b">
+      <div class="card"><div class="card-hd"><div><div class="card-title">GST Trend</div></div></div><div style="height:200px"><canvas id="gst_trend"></canvas></div></div>
+      <div class="card"><div class="card-hd"><div><div class="card-title">GST Summary</div></div></div>
+        <div style="background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:12px;margin-bottom:8px"><div style="font-size:10px;color:var(--red);font-weight:600">NET GST PAYABLE (approx @18%)</div><div style="font-size:24px;font-weight:700;color:var(--red)">${fmt(net)}</div></div>
+        <div style="height:120px"><canvas id="gst_donut"></canvas></div>
+      </div>
+    </div>
+    <div class="card"><div class="card-hd"><div><div class="card-title">GSTIN-wise vouchers</div></div><input type="text" class="search-input" id="gst_search" placeholder="Search GSTIN/party..." oninput="filterGST()"></div><div class="tbl-scroll" id="gst_tbl"></div></div>`;
+  const g=groupMonthly(filtered.filter(r=>['Sales','Purchase'].includes(r.vchType)));
+  const labs=Object.keys(g).sort();
+  charts['gst_trend']=new Chart(document.getElementById('gst_trend'),{type:'line',data:{labels:labs,datasets:[{label:'Output GST',data:labs.map(l=>sumType(g[l],'Sales')*0.18),borderColor:'#dc2626',tension:.4,pointRadius:2,borderWidth:2,fill:false},{label:'ITC',data:labs.map(l=>sumType(g[l],'Purchase')*0.18),borderColor:'#059669',tension:.4,pointRadius:2,borderWidth:2,fill:false}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'top',labels:{font:{size:10},boxWidth:8}}},scales:{y:{ticks:{callback:v=>'Rs.'+fmtK(v),font:{size:9}},grid:{color:'rgba(0,0,0,.03)'}},x:{ticks:{font:{size:9},maxRotation:45},grid:{display:false}}}}});
+  charts['gst_donut']=new Chart(document.getElementById('gst_donut'),{type:'doughnut',data:{labels:['Output GST','ITC','Net Payable'],datasets:[{data:[Math.round(output),Math.round(itc),Math.round(net)],backgroundColor:['#dc2626','#059669','#d97706'],borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,cutout:'60%',plugins:{legend:{display:false}}}});
+  window._gstRows=filtered.filter(r=>r.gstin&&r.gstin.length>5);
+  filterGST();
+}
+function filterGST(){
+  const s=(document.getElementById('gst_search')||{}).value?.toLowerCase()||'';
+  const rows=(window._gstRows||[]).filter(r=>!s||r.gstin?.toLowerCase().includes(s)||r.party?.toLowerCase().includes(s)).slice(0,200);
+  const el=document.getElementById('gst_tbl');if(el)el.innerHTML=buildVchTable(rows);
+}
+
+// ===================== MASTERS =====================
+function renderMasters(){
+  const el=document.getElementById('tab-masters');
+  const masterTabs=[
+    ['Trial_Balance',['Company','Group/Ledger','DR Amount','CR Amount','Net Balance']],
+    ['Balance_Sheet',['Company','Group/Ledger','DR Amount','CR Amount']],
+    ['Profit_Loss',['Company','Ledger/Group','DR Amount','CR Amount']],
+    ['Outstanding',['Company','Type','Party','Bill No','Date','Amount','Due Date','Overdue Days']],
+    ['Stock_Summary',['Company','Name','Stock Group','Type','Unit','Closing Qty','Closing Qty (with Unit)','Closing Rate','Closing Value']],
+    ['Ledgers',['Company','Name','Group','Closing Balance','GSTIN','PAN','Mobile','Email','State']],
+    ['Day_Book',['Company','Date','Vch Type','Vch No','Party','Amount','Narration','Created By']],
+    ['Item_Allocations',['Company','Date','Vch Type','Vch No','Party','Item','Qty','Rate','Amount']],
+  ];
+  let tabs='',content='';
+  masterTabs.forEach(([name,hdrs],i)=>{
+    const rows=getSheetRows(name);
+    tabs+=`<button onclick="switchMaster('${name}',this)" class="pf${i===0?' active':''}" style="font-size:10px">${name.replace(/_/g,' ')} (${rows.length})</button>`;
+    content+=`<div id="master_${name}" style="display:${i===0?'block':'none'}">
+      <div style="margin-bottom:8px;display:flex;justify-content:flex-end"><button class="dl-btn" onclick="dlSheet('${name}')">⬇ Download CSV</button></div>
+      <div class="tbl-scroll">${buildGenTable(rows,hdrs)}</div>
+    </div>`;
+  });
+  el.innerHTML=`<div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:12px">${tabs}</div>${content}`;
+}
+function switchMaster(name,btn){
+  document.querySelectorAll('#tab-masters .pf').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  document.querySelectorAll('[id^="master_"]').forEach(el=>el.style.display='none');
+  const el=document.getElementById('master_'+name);if(el)el.style.display='block';
+}
+
+// ===================== CHART HELPERS =====================
+function buildTrendChart(id,data,typesColors){
+  const g=groupMonthly(data);const labs=Object.keys(g).sort();
+  charts['overview_'+id]=new Chart(document.getElementById(id),{type:'bar',data:{labels:labs,datasets:[
+    ...typesColors.map(([t,c])=>({label:t,type:'bar',data:labs.map(l=>sumType(g[l],t)),backgroundColor:c+'cc',borderRadius:3,borderSkipped:false,yAxisID:'y'})),
+    typesColors.length>=2?{label:'Net',type:'line',data:labs.map(l=>sumType(g[l],typesColors[0][0])-sumType(g[l],typesColors[1][0])),borderColor:'#f97316',borderWidth:2,pointRadius:2,tension:.4,fill:false,yAxisID:'y'}:null
+  ].filter(Boolean)},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'top',labels:{font:{size:10},boxWidth:8,padding:8}}},scales:{y:{ticks:{callback:v=>'Rs.'+fmtK(v),font:{size:9}},grid:{color:'rgba(0,0,0,.03)'}},x:{ticks:{font:{size:9},maxRotation:45},grid:{display:false}}}}});
+}
+function buildDonut(id,legId,data){
+  const byType={};data.forEach(r=>{byType[r.vchType]=(byType[r.vchType]||0)+1;});
+  const ents=Object.entries(byType).sort((a,b)=>b[1]-a[1]);const tot=ents.reduce((s,[,c])=>s+c,0);
+  charts['overview_'+id]=new Chart(document.getElementById(id),{type:'doughnut',data:{labels:ents.map(e=>e[0]),datasets:[{data:ents.map(e=>e[1]),backgroundColor:ents.map(e=>TC[e[0]]||'#8b95b8'),borderWidth:2,borderColor:'#fff'}]},options:{responsive:true,maintainAspectRatio:false,cutout:'62%',plugins:{legend:{display:false}}}});
+  const leg=document.getElementById(legId);
+  if(leg)leg.innerHTML=ents.map(([t,c])=>`<div style="display:flex;align-items:center;gap:4px;margin-bottom:4px"><div style="width:8px;height:8px;border-radius:2px;background:${TC[t]||'#8b95b8'};flex-shrink:0"></div><span style="flex:1;font-size:10px;color:var(--t2)">${t}</span><span style="font-size:10px;color:var(--t3)">${c} (${Math.round(c/tot*100)}%)</span></div>`).join('');
+}
+function buildLineChart(id,data,typesColors){
+  const g=groupMonthly(data);const labs=Object.keys(g).sort();
+  charts['overview_'+id]=new Chart(document.getElementById(id),{type:'line',data:{labels:labs,datasets:typesColors.map(([t,c])=>({label:t,data:labs.map(l=>sumType(g[l],t)),borderColor:c,backgroundColor:c+'15',tension:.4,fill:true,pointRadius:2,borderWidth:2}))},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'top',labels:{font:{size:10},boxWidth:8}}},scales:{y:{ticks:{callback:v=>'Rs.'+fmtK(v),font:{size:9}},grid:{color:'rgba(0,0,0,.03)'}},x:{ticks:{font:{size:9},maxRotation:45},grid:{display:false}}}}});
+}
+function buildParties(id,data){
+  const el=document.getElementById(id);if(!el)return;
+  const m={};data.forEach(r=>{const p=r.party||'Unknown';m[p]=(m[p]||0)+Math.abs(r.amount);});
+  const top=Object.entries(m).sort((a,b)=>b[1]-a[1]).slice(0,6);
+  if(!top.length){el.innerHTML='<div style="text-align:center;padding:16px;color:var(--t3)">No data</div>';return;}
+  const max=top[0][1];const colors=Object.values(TC);
+  el.innerHTML=top.map(([p,a],i)=>`<div class="prog-row"><div class="prog-lbl" title="${p}">${p}</div><div class="prog-track"><div class="prog-fill" style="width:${Math.round(a/max*100)}%;background:${colors[i%colors.length]}"></div></div><div class="prog-val">${fmt(a)}</div></div>`).join('');
+}
+function buildYoY(id,type){
+  const fys=[...new Set(rawData.map(r=>r.date?getFY(r.date):null).filter(Boolean))].sort();
+  const colors=['#2563eb','#059669','#d97706','#dc2626','#7c3aed'];
+  charts['yoy_'+id]=new Chart(document.getElementById(id),{type:'line',data:{labels:MONTHS,datasets:fys.map((fy,i)=>({label:`FY ${fy}-${String(fy+1).slice(-2)}`,data:MONTHS.map((_,mi)=>{const mo=(mi+3)%12;return rawData.filter(r=>r.date&&getFY(r.date)===fy&&r.date.getMonth()===mo&&r.vchType===type).reduce((s,r)=>s+Math.abs(r.amount),0);}),borderColor:colors[i%colors.length],tension:.4,pointRadius:2,borderWidth:2,fill:false}))},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'top',labels:{font:{size:9},boxWidth:7,padding:6}}},scales:{y:{ticks:{callback:v=>'Rs.'+fmtK(v),font:{size:9}},grid:{color:'rgba(0,0,0,.03)'}},x:{ticks:{font:{size:9}},grid:{display:false}}}}});
+}
+
+// ===================== TABLE HELPERS =====================
+function buildVchTable(rows){
+  if(!rows||!rows.length)return'<div style="text-align:center;padding:20px;color:var(--t3)">No records</div>';
+  const BC={Sales:'background:#eff6ff;color:#2563eb',Purchase:'background:#ecfdf5;color:#059669',Payment:'background:#fffbeb;color:#d97706',Receipt:'background:#f5f3ff;color:#7c3aed',RCM:'background:#ecfeff;color:#0891b2',Journal:'background:#fff7ed;color:#f97316',Contra:'background:#fdf4ff;color:#a855f7','Debit Note':'background:#fef2f2;color:#dc2626','Credit Note':'background:#f0fdf4;color:#16a34a'};
+  return`<table><thead><tr><th>Date</th><th>Type</th><th>Vch No</th><th>Party</th><th>Company</th><th>State</th><th>GST No</th><th>Created By</th><th style="text-align:right">Amount</th></tr></thead><tbody>${
+    rows.map(r=>`<tr><td>${fmtDate(r.date)}</td><td><span class="badge" style="${BC[r.vchType]||'background:#f1f5f9;color:#8b95b8'}">${r.vchType}</span></td><td style="font-family:monospace;font-size:10px">${r.vchNo||'--'}</td><td style="max-width:140px;overflow:hidden;text-overflow:ellipsis">${r.party||'--'}</td><td style="max-width:100px;overflow:hidden;text-overflow:ellipsis;color:var(--t3);font-size:10px">${r.company||'--'}</td><td style="color:var(--t3);font-size:10px">${r.state||'--'}</td><td style="font-family:monospace;font-size:10px;color:var(--t3)">${r.gstin||'--'}</td><td style="font-size:10px;color:var(--blue)">${r.createdBy||'--'}</td><td class="amt">Rs.${Math.abs(r.amount).toLocaleString('en-IN')}</td></tr>`).join('')
+  }</tbody></table>`;
+}
+function buildGenTable(rows,hdrs){
+  if(!rows||!rows.length)return'<div style="text-align:center;padding:20px;color:var(--t3)">No data available</div>';
+  const useHdrs=hdrs||Object.keys(rows[0]||{});
+  return`<table><thead><tr>${useHdrs.map(h=>`<th>${h}</th>`).join('')}</tr></thead><tbody>${
+    rows.slice(0,300).map(r=>`<tr>${useHdrs.map(h=>`<td>${r[h]!==undefined?r[h]:'--'}</td>`).join('')}</tr>`).join('')
+  }</tbody></table>`;
+}
+
+// ===================== UTILS =====================
+function getSheetRows(name){
+  const sh=SHEETS[name];if(!sh||!sh.rows||!sh.headers)return[];
+  return sh.rows.map(r=>{const obj={};sh.headers.forEach((h,i)=>obj[h]=r[i]||'');return obj;});
+}
+function groupMonthly(data){
+  const g={};
+  data.forEach(r=>{if(!r.date)return;const k=MONTHS[r.date.getMonth()]+' '+String(r.date.getFullYear()).slice(-2);if(!g[k])g[k]=[];g[k].push(r);});
+  return g;
+}
+function sumType(rows,type){return(rows||[]).filter(r=>r.vchType===type).reduce((s,r)=>s+Math.abs(r.amount),0);}
+function fmt(n){if(!n||isNaN(n))return'Rs.0';n=Math.abs(n);if(n>=10000000)return'Rs.'+(n/10000000).toFixed(2)+'Cr';if(n>=100000)return'Rs.'+(n/100000).toFixed(2)+'L';if(n>=1000)return'Rs.'+(n/1000).toFixed(1)+'K';return'Rs.'+Math.round(n).toLocaleString('en-IN');}
+function fmtK(n){if(n>=10000000)return(n/10000000).toFixed(1)+'Cr';if(n>=100000)return(n/100000).toFixed(1)+'L';if(n>=1000)return(n/1000).toFixed(0)+'K';return Math.round(n);}
+function fmtDate(d){if(!d)return'--';return d.toLocaleDateString('en-IN',{day:'2-digit',month:'2-digit',year:'numeric'});}
+function parseDate(s){if(!s)return null;s=String(s).trim();let m=s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);if(m)return new Date(+m[3],+m[2]-1,+m[1]);m=s.match(/^(\d{4})(\d{2})(\d{2})$/);if(m)return new Date(+m[1],+m[2]-1,+m[3]);const d=new Date(s);return isNaN(d)?null:d;}
+function parseAmt(s){if(!s||s==='')return 0;s=String(s).trim();s=s.replace(/[^0-9.\-]/g,'');const n=parseFloat(s);if(isNaN(n)||n===0)return 0;return Math.abs(n);}
+function normalizeType(t){const tl=(t||'').toLowerCase();if(tl.includes('sales'))return'Sales';if(tl.includes('purchase'))return'Purchase';if(tl.includes('payment'))return'Payment';if(tl.includes('receipt'))return'Receipt';if(tl.includes('rcm'))return'RCM';if(tl.includes('journal'))return'Journal';if(tl.includes('contra'))return'Contra';if(tl.includes('debit'))return'Debit Note';if(tl.includes('credit'))return'Credit Note';return t||'Other';}
+function parseCSV(text){const rows=[];let row=[],cell='',inQ=false;for(let i=0;i<text.length;i++){const c=text[i];if(inQ){if(c==='"'&&text[i+1]==='"'){cell+='"';i++;}else if(c==='"')inQ=false;else cell+=c;}else{if(c==='"')inQ=true;else if(c===','){row.push(cell);cell='';}else if(c==='\n'){row.push(cell);rows.push(row);row=[];cell='';}else if(c!=='\r')cell+=c;}}if(cell||row.length){row.push(cell);rows.push(row);}return rows;}
+function show(id){const el=document.getElementById(id);if(el)el.classList.remove('hidden');}
+function hide(id){const el=document.getElementById(id);if(el)el.classList.add('hidden');}
+function setLoad(msg){const el=document.getElementById('loadTxt');if(el)el.textContent=msg;}
+
+window.addEventListener('load',()=>{
+  const saved=localStorage.getItem('ls_url');
+  if(saved){document.getElementById('sheetInput').value=saved;sheetUrl=saved;loadData();}
+});
+</script>
+</body>
+</html>
